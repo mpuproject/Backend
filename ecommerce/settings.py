@@ -83,7 +83,10 @@ SIMPLE_JWT = {
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),  # Token 类型
 }
 
-AUTH_USER_MODEL = 'user.User'  # 使用自定义用户模型
+AUTH_USER_MODEL = 'user.User'  # Customized User
+
+import os
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8080",
