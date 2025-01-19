@@ -13,15 +13,18 @@ def login_view(request):
             data = json.loads(request.body)
             username = data.get('username')
             password = data.get('password')
-
             
             user = authenticate(username=username, password=password)
             if user is not None:
                 refresh = RefreshToken.for_user(user)
                 refresh['username'] = user.username
+                
+                access_token = str(refresh.access_token)
+                refresh_token = str(refresh) 
                 result = Result.success_with_data({
-                    "access": str(refresh.access_token),
-                    "refresh": str(refresh) })
+                    "access": access_token,
+                    "refresh": refresh_token
+                })
                 return JsonResponse(result.to_dict())
             else:
                 result = Result.error("Incorrect username or password")
