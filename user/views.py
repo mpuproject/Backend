@@ -5,6 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from common.result.result import Result
 from .models import User
+from ecommerce.settings import MEDIA_URL
 
 @csrf_exempt  # 禁用 CSRF 验证（仅用于测试，生产环境需要启用）
 def login_view(request):
@@ -17,11 +18,12 @@ def login_view(request):
             user = authenticate(username=username, password=password)
             if user is not None:
                 refresh = RefreshToken.for_user(user)
-                refresh['username'] = user.username
                 
                 access_token = str(refresh.access_token)
                 refresh_token = str(refresh) 
                 result = Result.success_with_data({
+                    "username": user.username,
+                    'profile': str(user.profile_picture),
                     "access": access_token,
                     "refresh": refresh_token
                 })
@@ -66,7 +68,9 @@ def signup_view(request):
             user = User.objects.create_user(
                 username=username,
                 email=email,
-                password=password
+                password=password,
+                profile_picture=MEDIA_URL+'200.png',
+                user_type="0"
             )
 
             # success
@@ -85,7 +89,4 @@ def signup_view(request):
 
     else:
         result = Result.error('Only POST requests are allowed')
-        return JsonResponse({
-            'success': False,
-            'message': 'Only POST requests are allowed'
-        }, status=405)
+        return JsonResponse(result.to_dict(), status=405)

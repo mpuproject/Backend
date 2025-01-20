@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'corsheaders',
     'user',
+    'product',
+    'home',
 ]
 
 MIDDLEWARE = [
@@ -86,10 +88,12 @@ SIMPLE_JWT = {
 AUTH_USER_MODEL = 'user.User'  # Customized User
 
 import os
+
+MEDIA_URL = '/media/'   # http://localhost:8080/media/
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8080",
+    "http://localhost:5173",
 ]
 
 CORS_ALLOW_METHODS = [
