@@ -1,6 +1,7 @@
 from django.db import models
 import uuid
 from django.db.models import JSONField
+from category.models import Category, SubCategory
 
 class Product(models.Model):
     # 商品状态选项
@@ -10,20 +11,9 @@ class Product(models.Model):
         ('OOS', 'Out of stock'),    #售罄
     ]
 
-    TAG_CHOICES = [
-        ('Living', 'Living'),   #居家
-        ('Food', 'Food'),   #美食
-        ('Clothes', 'Clothes'), #服饰
-        ('Baby', 'Baby'),   #母婴
-        ('Health', 'Health'),   #健康
-        ('Digital', 'Digital'), #数码
-        ('Sports', 'Sports'),    #运动
-    ]
-
     product_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     product_name = models.CharField(max_length=255, verbose_name="商品名称")
     product_desc = models.TextField(verbose_name="商品描述")
-    product_tag = models.CharField(max_length=100, choices=TAG_CHOICES, verbose_name="分类")
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="价格")
     images = JSONField(default=list, verbose_name="商品图片")
     
@@ -37,6 +27,15 @@ class Product(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='INA', verbose_name="商品状态")
     created_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
     updated_time = models.DateTimeField(auto_now=True, verbose_name="更新时间")
+
+    #商品分类信息
+    sub_category = models.ForeignKey(
+        SubCategory,  # 关联到 SubCategory 模型
+        on_delete=models.PROTECT,  # 防止删除 SubCategory 时误删商品
+        related_name='products',  # 反向查询名称
+        verbose_name="商品分类"
+    )
+
 
     def __str__(self):
         return self.product_name
