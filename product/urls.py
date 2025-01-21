@@ -2,5 +2,5 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('new/', views.new_view, name='homeNew'),
+    path('detail/<uuid:pk>/', views.getDetails_view, name="getDetails"),
 ]

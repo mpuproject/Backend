@@ -26,12 +26,14 @@ class Product(models.Model):
     product_tag = models.CharField(max_length=100, choices=TAG_CHOICES, verbose_name="分类")
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="价格")
     images = JSONField(default=list, verbose_name="商品图片")
+    
     stock_quantity = models.IntegerField(verbose_name="库存数量")
     low_stock_threshold = models.IntegerField(verbose_name="低库存阈值")
 
     #商品详细信息
     product_details = JSONField(default=list, verbose_name="商品详细信息")
-    
+    product_rating = models.FloatField(default=0.0, verbose_name="商品评分")
+
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='INA', verbose_name="商品状态")
     created_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
     updated_time = models.DateTimeField(auto_now=True, verbose_name="更新时间")
