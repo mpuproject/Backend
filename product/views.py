@@ -26,10 +26,10 @@ def get_details_view(request, pk):  # 使用 pk 作为参数名
         'name': product.product_name,
         'price': str(product.price),
         'description': product.product_desc,
-        'images': product.images,
         'rating': product.product_rating,
         'stock_quantity': product.stock_quantity,
         'low_stock_threshold': product.low_stock_threshold,
+        'images': product.images,
         'details': product.product_details,
         'sub_category': {
             'id': str(sub_category.sub_cate_id),
