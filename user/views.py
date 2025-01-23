@@ -23,9 +23,10 @@ def login_view(request):
                 refresh_token = str(refresh) 
                 result = Result.success_with_data({
                     "username": user.username,
-                    'profile': str(user.profile_picture),
+                    "profile": str(user.profile_picture),
                     "access": access_token,
-                    "refresh": refresh_token
+                    "refresh": refresh_token,
+                    "is_staff": user.is_staff,
                 })
                 return JsonResponse(result.to_dict())
             else:
@@ -47,6 +48,7 @@ def signup_view(request):
             email = data.get('email')
             password = data.get('password')
             confirm_password = data.get('confirmPwd')
+            is_staff = data.get('is_staff', 0)
 
             if not username or not email or not password or not confirm_password:
                 result = Result.error('All fields are required')
@@ -70,7 +72,7 @@ def signup_view(request):
                 email=email,
                 password=password,
                 profile_picture=MEDIA_URL+'200.png',
-                user_type="0"
+                is_staff=is_staff,
             )
 
             # success

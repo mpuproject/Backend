@@ -4,7 +4,9 @@ from django.http import JsonResponse
 from common.result.result import Result
 import uuid
 from .models import Product
+from common.utils.decorators import token_required
 
+@token_required
 @require_GET
 def get_details_view(request, pk):  # 使用 pk 作为参数名
     try:
