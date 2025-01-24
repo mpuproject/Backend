@@ -1,6 +1,7 @@
 from django.db import models
 import uuid
 from ecommerce.settings import AUTH_USER_MODEL
+from rest_framework import serializers
 
 class Cart(models.Model):
     cart_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False) # 购物车 ID

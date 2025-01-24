@@ -77,9 +77,9 @@ def signup_view(request):
             )
 
             # success
-            data = {}
             result = Result.success_with_data({
                 'user': {
+                    'id': str(user.id),
                     'username': user.username,
                     'email': user.email,
                 },
