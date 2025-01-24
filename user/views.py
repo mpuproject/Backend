@@ -22,6 +22,7 @@ def login_view(request):
                 access_token = str(refresh.access_token)
                 refresh_token = str(refresh) 
                 result = Result.success_with_data({
+                    "id": user.id,
                     "username": user.username,
                     "profile": str(user.profile_picture),
                     "access": access_token,
