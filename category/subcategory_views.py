@@ -53,6 +53,21 @@ def get_subcategory_products_view(request):
 
         # 分页处理
         paginator = Paginator(products, page_size)
+
+        # 若大于总页数：
+        if page > paginator.num_pages:
+            response_data = {
+                "products": [],
+                "pagination": {
+                    "current_page": page,
+                    "total_pages": paginator.num_pages,
+                    "total_items": paginator.count,
+                    "page_size": page_size
+                }
+            }
+            result = Result.success_with_data(response_data)
+            return JsonResponse(result.to_dict())
+
         page_obj = paginator.get_page(page)
 
         # 构造返回的数据
