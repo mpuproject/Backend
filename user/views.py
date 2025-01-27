@@ -6,6 +6,7 @@ import json
 from common.result.result import Result
 from .models import User
 from ecommerce.settings import MEDIA_URL
+import uuid
 
 @csrf_exempt  # 禁用 CSRF 验证（仅用于测试，生产环境需要启用）
 def login_view(request):
@@ -69,6 +70,7 @@ def signup_view(request):
 
             # create user
             user = User.objects.create_user(
+                id=uuid.uuid4(),
                 username=username,
                 email=email,
                 password=password,

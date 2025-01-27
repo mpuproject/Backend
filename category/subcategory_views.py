@@ -48,8 +48,8 @@ def get_subcategory_products_view(request):
             result = Result.error("Subcategory not found")
             return JsonResponse(result.to_dict(), status=404)
 
-        # 获取二级分类下的所有产品，并按指定字段排序
-        products = Product.objects.filter(sub_category=sub_category).order_by(sort_field)
+        # 获取二级分类下的所有可用产品，并按指定字段排序
+        products = Product.objects.filter(sub_category=sub_category, status='1').order_by(sort_field)
 
         # 分页处理
         paginator = Paginator(products, page_size)

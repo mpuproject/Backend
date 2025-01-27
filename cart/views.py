@@ -14,7 +14,7 @@ def save_cart_view(request):
         user_id = data.get('user')
         products = data.get('products')
 
-        if not user_id or not products:
+        if not user_id or products is None:
             result = Result.error('Missing user or products')
             return JsonResponse(result.to_dict(), status=400)
         
