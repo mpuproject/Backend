@@ -140,10 +140,12 @@ def add_product_view(request):
             status=data['status'],
             sub_category_id=data['subCategoryId'],
             product_rating=0,
-            product_details=data.get('details', ''),  # 如果未提供details，默认为空字符串
+            product_details=data.get('details', []),  # 如果未提供details，默认为空数组
             created_time=timezone.now()
         )
         
+        print(data['subCategoryId'])
+
         # 保存产品
         product.save()
         
@@ -190,6 +192,8 @@ def update_product_view(request, id):
             product.sub_category = data['subCategoryId']
         if 'details' in data:
             product.product_details = data['details']
+        if 'status' in data:
+            product.status = data['status']
         product.updated_time = timezone.now()
         
         # 保存更新
@@ -268,3 +272,27 @@ def get_product_view(request):
     except Exception as e:
         result = Result.error(f'Failed to get products: {str(e)}')
         return JsonResponse(result.to_dict(), status=500)
+    
+@token_required
+@admin_required
+@require_GET
+def get_product_inventory_status_view(request):
+    # 获取库存紧张的产品
+    low_stock_products = Product.objects.filter(
+        stock_quantity__gt=0,
+        stock_quantity__lt=F('low_stock_threshold'),
+        status='1'
+    ).count()
+        
+    # 获取库存不足的产品
+    out_of_stock_products = Product.objects.filter(
+        stock_quantity=0,
+        status='1'
+    ).count()
+
+    data = {
+        "understock": out_of_stock_products,
+        "shortstock": low_stock_products,
+    }
+    result = Result.success_with_data(data)
+    return JsonResponse(result.to_dict())

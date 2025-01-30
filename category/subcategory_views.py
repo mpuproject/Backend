@@ -6,7 +6,7 @@ import json
 from product.models import Product
 from django.core.paginator import Paginator
 from django.views.decorators.csrf import csrf_exempt
-
+from common.utils.decorators import admin_required, token_required
 
 # 获取二级分类导航
 @require_GET
@@ -99,3 +99,20 @@ def get_subcategory_products_view(request):
     except json.JSONDecodeError:
         result = Result.error("Invalid JSON format in request body")
         return JsonResponse(result.to_dict(), status=400)
+    
+@admin_required
+@token_required
+def get_subcategory_view(request):
+    subList = SubCategory.objects.all()
+    
+    subcategory_data = [
+        {
+            "id": sub.sub_cate_id,
+            "name": sub.sub_cate_name,
+            "category_id": sub.category.category_id,
+        }
+        for sub in subList
+    ]
+
+    result = Result.success_with_data(subcategory_data)
+    return JsonResponse(result.to_dict())

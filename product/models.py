@@ -6,9 +6,8 @@ from category.models import Category, SubCategory
 class Product(models.Model):
     # 商品状态选项
     STATUS_CHOICES = [
-        ('ACT', 'Active'),  #可用
-        ('INA', 'Inactive'),    #不可用
-        ('OOS', 'Out of stock'),    #售罄
+        ('1', 'Available'),  #可用
+        ('0', 'Unavailable'),    #不可用
     ]
 
     product_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

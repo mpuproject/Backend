@@ -7,6 +7,7 @@ from common.result.result import Result
 from .models import User
 from ecommerce.settings import MEDIA_URL
 import uuid
+from rest_framework_simplejwt.views import TokenRefreshView
 
 @csrf_exempt  # 禁用 CSRF 验证（仅用于测试，生产环境需要启用）
 def login_view(request):
@@ -95,3 +96,10 @@ def signup_view(request):
     else:
         result = Result.error('Only POST requests are allowed')
         return JsonResponse(result.to_dict(), status=405)
+    
+class UserTokenRefreshView(TokenRefreshView):
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            pass
+        return response
