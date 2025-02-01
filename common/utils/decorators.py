@@ -16,6 +16,7 @@ def token_required(view_func):
             if auth_result is not None:
                 user, token = auth_result  # 解包用户和 token
                 request.user = user  # 将用户对象附加到 request 中
+                request.auth = token  # 将新的token附加到request中
             else:
                 raise InvalidToken("User login has expired")
         except (InvalidToken, TokenError) as e:

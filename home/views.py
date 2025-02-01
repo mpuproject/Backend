@@ -35,7 +35,7 @@ def new_view(request):
 @require_GET
 def hot_view(request):
     #评分>=7.5的随机四个商品
-    rating_products = Product.objects.filter(product_rating__gte=7.5).order_by('?')[:4]
+    rating_products = Product.objects.filter(product_rating__gte=3.75).order_by('?')[:4]
 
     # 构造返回数据
     hot_list = []

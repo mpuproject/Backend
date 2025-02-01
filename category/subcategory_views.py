@@ -102,6 +102,7 @@ def get_subcategory_products_view(request):
     
 @admin_required
 @token_required
+@require_GET
 def get_subcategory_view(request):
     subList = SubCategory.objects.all()
     

@@ -45,6 +45,8 @@ def get_details_view(request, pk):  # 使用 pk 作为参数名
             'id': str(category.category_id),
             'name': category.category_name,
         },
+        'createdTime': str(product.created_time),
+        'updatedTime': str(product.updated_time),
     }
 
     result = Result.success_with_data(product_data)
@@ -143,8 +145,6 @@ def add_product_view(request):
             product_details=data.get('details', []),  # 如果未提供details，默认为空数组
             created_time=timezone.now()
         )
-        
-        print(data['subCategoryId'])
 
         # 保存产品
         product.save()
@@ -233,7 +233,7 @@ def delete_product_view(request, id):
 def get_product_view(request):
     try:
         page = int(request.GET.get('page', 1))  # 默认第一页
-        page_size = int(request.GET.get('pageSize', 20))  # 默认每页20条
+        page_size = int(request.GET.get('pageSize', 10))  # 默认每页10条
 
         # 计算分页范围
         start = (page - 1) * page_size
@@ -295,4 +295,48 @@ def get_product_inventory_status_view(request):
         "shortstock": low_stock_products,
     }
     result = Result.success_with_data(data)
+    return JsonResponse(result.to_dict())
+
+@token_required
+@admin_required
+@require_GET
+def get_admin_product_view(request, pk):
+    try:
+        # 使用 pk 查询商品
+        product = Product.objects.get(pk=pk)
+    except Product.DoesNotExist:
+        result = Result.error('Product does not exist')
+        return JsonResponse(result.to_dict(), status=404)
+
+    # 获取商品的二级分类
+    sub_category = product.sub_category
+
+    # 获取二级分类对应的一级分类
+    category = sub_category.category
+
+    # 构造商品数据
+    product_data = {
+        'id': str(product.product_id),
+        'name': product.product_name,
+        'price': str(product.price),
+        'description': product.product_desc,
+        'status': product.status,
+        'rating': product.product_rating,
+        'stock_quantity': product.stock_quantity,
+        'low_stock_threshold': product.low_stock_threshold,
+        'images': product.images,
+        'details': product.product_details,
+        'sub_category': {
+            'id': str(sub_category.sub_cate_id),
+            'name': sub_category.sub_cate_name,
+        },
+        'category': {
+            'id': str(category.category_id),
+            'name': category.category_name,
+        },
+        'createdTime': str(product.created_time),
+        'updatedTime': str(product.updated_time),
+    }
+
+    result = Result.success_with_data(product_data)
     return JsonResponse(result.to_dict())

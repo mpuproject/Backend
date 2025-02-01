@@ -6,6 +6,7 @@ import json
 from product.models import Product
 import uuid
 from django.views.decorators.csrf import csrf_exempt
+from common.utils.decorators import token_required, admin_required
 
 # 获取所有分类目录
 @require_GET
@@ -41,7 +42,7 @@ def get_category_view(request):
         subcategory_list = []
         for subcategory in subcategories:
             # 获取当前二级分类下的商品（最多 4 条）
-            products = Product.objects.filter(sub_category_id=subcategory.sub_cate_id, status="ACT").order_by('?')[:4]
+            products = Product.objects.filter(sub_category_id=subcategory.sub_cate_id, status="1").order_by('?')[:4]
             product_list = [
                 {
                     'id': str(product.product_id),
@@ -109,9 +110,11 @@ def add_category_view(request):
         result = Result.error('Invalid JSON format in request body')
         return JsonResponse(result.to_dict(), status=400)
 
+@admin_required
+@token_required
 @require_GET
 def get_all_categories_view(request):
-    categories = Category.objects.filter()
+    categories = Category.objects.all()
 
     # 构造返回的数据
     category_list = [

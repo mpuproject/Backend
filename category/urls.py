@@ -8,4 +8,5 @@ urlpatterns = [
     path('sub/filter/<str:id>/', subcategory_views.get_subcategory_filter_view, name='getSubcategoryFilter'),
     path('sub/product/', subcategory_views.get_subcategory_products_view, name="getSubcategoryProducts"),
     path('sub/list/', subcategory_views.get_subcategory_view, name='getSubcategoryList'),
+    path('list/', category_views.get_all_categories_view, name='getAllCategories'),
 ]

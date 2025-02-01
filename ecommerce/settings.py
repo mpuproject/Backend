@@ -69,7 +69,7 @@ REST_FRAMEWORK = {
 from datetime import timedelta
 # JWT 配置
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),  # Access Token 有效期
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),  # Access Token 有效期
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),     # Refresh Token 有效期
     'ROTATE_REFRESH_TOKENS': True,                  # 是否在刷新时生成新的 Refresh Token
     'BLACKLIST_AFTER_ROTATION': True,                # 是否将旧的 Refresh Token 加入黑名单

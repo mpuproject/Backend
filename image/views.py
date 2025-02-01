@@ -8,7 +8,7 @@ from common.result.result import Result
 from django.views.decorators.csrf import csrf_exempt
 from common.utils.decorators import token_required
 
-@token_required
+# @token_required
 @csrf_exempt
 @require_POST
 def upload_image(request):
@@ -38,7 +38,7 @@ def upload_image(request):
         filepath = default_storage.save(filename, file)
         
         # 返回文件URL
-        file_url = default_storage.url(filepath)
+        file_url = request.build_absolute_uri(default_storage.url(filepath))
         return JsonResponse({'url': file_url}, status=201)
     
     except Exception as e:
