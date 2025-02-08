@@ -2,7 +2,7 @@ from django.views.decorators.http import require_GET, require_POST, require_http
 from django.http import JsonResponse
 from common.result.result import Result
 from .models import Product
-from django.db.models import Q, Value, F
+from django.db.models import Q, F, Case, When, Value, IntegerField
 from rest_framework.views import APIView
 from category.models import SubCategory, Category
 from django.views.decorators.csrf import csrf_exempt
@@ -69,7 +69,7 @@ class SearchView(APIView):
             return JsonResponse(result.to_dict(), status=400)
 
         # 初始化产品查询集
-        products = Product.objects.all(status='1')
+        products = Product.objects.all().filter(status='1')
 
         # 如果提供了一级分类 ID
         if category_id:
@@ -81,18 +81,18 @@ class SearchView(APIView):
             # 过滤出关联了这些二级分类 ID 的产品
             products = products.filter(sub_category__sub_cate_id__in=sub_category_ids)
 
-        # 模糊查询商品名称和商品描述，筛选可用和没存货的商品
+        # 使用 Q 对象进行模糊查询
         if query:
-            # 计算相关度分数
             products = products.annotate(
-                relevance_score=(
-                    F('product_name__icontains', Value(query)) * 2 +  # 产品名称相关度权重更高
-                    F('product_desc__icontains', Value(query)) * 1    # 产品描述相关度权重较低
+                search_priority=Case(
+                    When(product_name__icontains=query, then=Value(2)),
+                    When(product_desc__icontains=query, then=Value(1)),
+                    default=Value(0),
+                    output_field=IntegerField(),
                 )
-            ).filter(
-                (Q(product_name__icontains=query) | Q(product_desc__icontains=query)) &
-                (Q(status='ACT') | Q(status='OOS'))
-            ).order_by('-relevance_score', f'-{sort_field}')  # 先按相关度排序，再按其他字段排序
+            ).filter(Q(product_name__icontains=query) | Q(product_desc__icontains=query))
+
+        products = products.order_by(f'-{sort_field}')
 
         # 分页
         start = (page - 1) * page_size

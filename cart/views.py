@@ -58,8 +58,8 @@ def add_cart_view(request):
     user_id = data.get('user_id')
 
     if not user_id:
-            result = Result.error('User ID missed')
-            return JsonResponse(result.to_dict(), status=400)
+        result = Result.error('User ID missed')
+        return JsonResponse(result.to_dict(), status=400)
 
 
     Cart.objects.create(user_id=user_id)
