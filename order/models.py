@@ -33,11 +33,15 @@ class Order(models.Model):
 
     order_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     order_status = models.CharField(max_length=1, choices=STATUS_CHOICES, default='0', verbose_name="订单状态")
-    delivery_time = models.CharField(max_length=1, choices=TIME_CHOICES, default='0', verbose_name='配送时间')
+    
     products = models.JSONField(default=list, verbose_name="商品列表")
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name='支付金额')
+
+    delivery_time = models.CharField(max_length=1, choices=TIME_CHOICES, default='0', verbose_name='配送时间')
     user = models.ForeignKey(AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="用户")
     address = models.ForeignKey(Address, on_delete=models.CASCADE, verbose_name='地址')
     pay_method = models.CharField(max_length=1, choices=PAYMENT_CHOICES, blank=True, null=True, verbose_name='支付方式')
+    
     created_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
     updated_time = models.DateTimeField(auto_now=True, verbose_name="更新时间")
 

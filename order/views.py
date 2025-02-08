@@ -10,7 +10,7 @@ from .models import Order
 from django.shortcuts import get_object_or_404
 
 @require_POST
-# @token_required
+@token_required
 @csrf_exempt
 def create_order_view(request):
     try:
@@ -29,6 +29,7 @@ def create_order_view(request):
         order = Order.objects.create(
             delivery_time=data.get('deliveryTime', '0'),
             products=data.get('products', []),
+            amount=data.get('amount'),
             user=user_instance,
             address=address_instance,
             order_status='0'  # 默认状态为未支付
@@ -50,3 +51,27 @@ def create_order_view(request):
     except Exception as e:
         result = Result.error(str(e))
         return JsonResponse(result.to_dict(), status=400)
+
+@token_required
+@require_GET
+def get_order_view(request):
+    try:
+        id = request.GET.get('id')
+        order = Order.objects.get(order_id=id)  # 根据用户 ID 查询订单
+        
+        # 将订单对象转换为字典列表
+        orders_data = {
+            'id': order.order_id,
+            'deliveryTime': order.delivery_time,
+            'products': order.products,
+            'orderStatus': order.order_status,
+            'amount': order.amount,
+        }
+        
+        result = Result.success_with_data(orders_data)  # 使用转换后的字典列表
+        return JsonResponse(result.to_dict())
+        
+    except Exception as e:
+        result = Result.error(str(e))
+        return JsonResponse(result.to_dict(), status=400)
+        
