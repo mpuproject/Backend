@@ -42,7 +42,7 @@ def get_category_view(request):
         subcategory_list = []
         for subcategory in subcategories:
             # 获取当前二级分类下的商品（最多 4 条）
-            products = Product.objects.filter(sub_category_id=subcategory.sub_cate_id, status="1").order_by('?')[:4]
+            products = Product.objects.filter(sub_category_id=subcategory.sub_cate_id, status="1", is_deleted=False).order_by('?')[:4]
             product_list = [
                 {
                     'id': str(product.product_id),

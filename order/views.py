@@ -75,3 +75,42 @@ def get_order_view(request):
         result = Result.error(str(e))
         return JsonResponse(result.to_dict(), status=400)
         
+@csrf_exempt
+@require_http_methods('PUT')
+# @token_required
+def update_order_view(request):
+    try:
+        data = json.loads(request.body)
+        order_id = data.get('orderId')
+        
+        # 获取要更新的订单
+        order = Order.objects.get(order_id=order_id)
+        
+        # 更新订单字段
+        if 'delivery_time' in data:
+            order.delivery_time = data['deliveryTime']
+        if 'products' in data:
+            order.products = data['products']
+        if 'address' in data:
+            address_instance = get_object_or_404(Address, address_id=data['address'])
+            order.address = address_instance
+        if 'order_status' in data:
+            order.order_status = data['orderStatus']
+        
+        order.save()  # 保存更新
+        
+        # 将更新后的订单对象转换为字典
+        order_data = {
+            'id': order.order_id,
+            'deliveryTime': order.delivery_time,
+            'products': order.products,
+            'address': order.address.address_id,
+            'orderStatus': order.order_status
+        }
+        
+        result = Result.success_with_data(order_data)  # 使用转换后的字典
+        return JsonResponse(result.to_dict())
+        
+    except Exception as e:
+        result = Result.error(str(e))
+        return JsonResponse(result.to_dict(), status=400)

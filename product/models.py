@@ -27,6 +27,9 @@ class Product(models.Model):
     created_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
     updated_time = models.DateTimeField(auto_now=True, verbose_name="更新时间")
 
+    # 逻辑删除
+    is_deleted = models.BooleanField(default=False)
+
     #商品分类信息
     sub_category = models.ForeignKey(
         SubCategory,  # 关联到 SubCategory 模型

@@ -15,7 +15,7 @@ from common.utils.decorators import admin_required, token_required
 def get_details_view(request, pk):  # 使用 pk 作为参数名
     try:
         # 使用 pk 查询商品
-        product = Product.objects.get(pk=pk, status='1')
+        product = Product.objects.get(pk=pk, status='1', is_deleted=False)
     except Product.DoesNotExist:
         result = Result.error('Product does not exist')
         return JsonResponse(result.to_dict(), status=404)
@@ -69,7 +69,7 @@ class SearchView(APIView):
             return JsonResponse(result.to_dict(), status=400)
 
         # 初始化产品查询集
-        products = Product.objects.all().filter(status='1')
+        products = Product.objects.all().filter(status='1', is_deleted=False)
 
         # 如果提供了一级分类 ID
         if category_id:
@@ -209,13 +209,14 @@ def update_product_view(request, id):
 @admin_required
 @token_required
 @csrf_exempt
-@require_http_methods(["DELETE"])
+@require_http_methods(["PATCH"])
 def delete_product_view(request, id):
     try:
-        # 获取并删除产品对象
+        # 获取产品对象
         try:
             product = Product.objects.get(product_id=id)
-            product.delete()
+            product.is_deleted = True  # 逻辑删除，将 is_deleted 设置为 True
+            product.save()  # 保存更改
         except Product.DoesNotExist:
             result = Result.error('Product does not exist')
             return JsonResponse(result.to_dict(), status=404)
@@ -240,7 +241,7 @@ def get_product_view(request):
         end = start + page_size
         
         # 获取分页后的产品数据
-        products = Product.objects.all()[start:end]
+        products = Product.objects.filter(is_deleted=False)[start:end]
         
         # 格式化产品数据
         products_data = [{
