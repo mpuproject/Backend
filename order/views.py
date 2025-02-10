@@ -8,6 +8,7 @@ from address.models import Address
 from common.utils.decorators import token_required
 from .models import Order
 from django.shortcuts import get_object_or_404
+from product.models import Product
 
 @require_POST
 @token_required
@@ -60,7 +61,7 @@ def get_order_view(request):
         order = Order.objects.get(order_id=id)  # 根据用户 ID 查询订单
         
         # 将订单对象转换为字典列表
-        orders_data = {
+        order_data = {
             'id': order.order_id,
             'deliveryTime': order.delivery_time,
             'products': order.products,
@@ -68,7 +69,7 @@ def get_order_view(request):
             'amount': order.amount,
         }
         
-        result = Result.success_with_data(orders_data)  # 使用转换后的字典列表
+        result = Result.success_with_data(order_data)  # 使用转换后的字典列表
         return JsonResponse(result.to_dict())
         
     except Exception as e:
@@ -87,14 +88,14 @@ def update_order_view(request):
         order = Order.objects.get(order_id=order_id)
         
         # 更新订单字段
-        if 'delivery_time' in data:
+        if 'deliveryTime' in data:
             order.delivery_time = data['deliveryTime']
         if 'products' in data:
             order.products = data['products']
         if 'address' in data:
             address_instance = get_object_or_404(Address, address_id=data['address'])
             order.address = address_instance
-        if 'order_status' in data:
+        if 'orderStatus' in data:
             order.order_status = data['orderStatus']
         
         order.save()  # 保存更新
@@ -105,10 +106,37 @@ def update_order_view(request):
             'deliveryTime': order.delivery_time,
             'products': order.products,
             'address': order.address.address_id,
-            'orderStatus': order.order_status
+            'orderStatus': order.order_status,
+            'amount': order.amount,
         }
         
         result = Result.success_with_data(order_data)  # 使用转换后的字典
+        return JsonResponse(result.to_dict())
+        
+    except Exception as e:
+        result = Result.error(str(e))
+        return JsonResponse(result.to_dict(), status=400)
+    
+@token_required
+@require_GET
+def get_order_by_user_id_view(request):
+    try:
+        user_id = request.GET.get('userId')
+        orders = Order.objects.filter(user=user_id)  # 根据用户 ID 查询订单
+        
+        # 将订单对象转换为字典列表
+        orders_data = []
+        orders_data.push({
+            'id': order.order_id,
+            'deliveryTime': order.delivery_time,
+            'products': order.products,
+            'orderStatus': order.order_status,
+            'amount': order.amount,
+            'createdTime': order.created_time,
+            'updatedTime': order.updated_time,
+        } for order in orders)
+        
+        result = Result.success_with_data(orders_data)  # 使用转换后的字典列表
         return JsonResponse(result.to_dict())
         
     except Exception as e:

@@ -35,7 +35,7 @@ def get_cart_view(request):
     user_id = request.GET.get('id')
     if not user_id:
         result = Result.error("User id missed")
-        return JsonResponse(result, status=400)
+        return JsonResponse(result.to_dict(), status=400)
     
     try:
         cart = Cart.objects.get(user=user_id)
@@ -53,6 +53,7 @@ def get_cart_view(request):
                 'price': product.price,  # 获取商品当前价格
                 'image': product.images[0] if product.images else None,  # 获取图片列表的第一个值
                 'status': not product.is_deleted and product.status == '1' and product.stock_quantity > 0,
+                'selected': not product.is_deleted and product.status == '1' and product.stock_quantity > 0,
             })
         
         cart_data = {

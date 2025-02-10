@@ -8,7 +8,7 @@ class Order(models.Model):
         ('0', 'Unpaid'),        #未支付
         ('1', 'Paid'),          #已支付
         ('2', 'Canceled'),      #已取消
-        ('3', 'Undelivered'),   #未送达
+        ('3', 'Undelivered'),   #已发货
         ('4', 'Delivered'),     #已送达
         ('5', 'Received'),      #已签收
         ('6', 'Unrefunded'),    #未退款
