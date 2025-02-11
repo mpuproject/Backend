@@ -6,7 +6,7 @@ from common.result.result import Result
 from user.models import User
 from address.models import Address
 from common.utils.decorators import token_required
-from .models import Order
+from .models import Order, OrderItem
 from django.shortcuts import get_object_or_404
 from product.models import Product
 
@@ -29,21 +29,27 @@ def create_order_view(request):
         # 创建订单
         order = Order.objects.create(
             delivery_time=data.get('deliveryTime', '0'),
-            products=data.get('products', []),
-            amount=data.get('amount'),
             user=user_instance,
             address=address_instance,
-            order_status='0'  # 默认状态为未支付
+            order_status='0'    #默认状态为未支付
         )
+
+        # 创建订单下的商品
+        for index, item in enumerate(items):
+            OrderItem.objects.create(
+                item_status='0',     #默认状态为未支付
+                product=item,
+                order=order,
+                item_id=f"{order.order_id}-{index}"
+            )
         
         # 将订单对象转换为字典
         order_data = {
             'id': order.order_id,
             'delivery_time': order.delivery_time,
-            'products': order.products,
-            'user': order.user.id,  # 或者其他用户信息
+            'user': order.user.id,
             'address': order.address.address_id,
-            'order_status': order.order_status
+            'order_status': order.order_status        #默认为未支付
         }
         
         result = Result.success_with_data(order_data)  # 使用转换后的字典
@@ -53,20 +59,32 @@ def create_order_view(request):
         result = Result.error(str(e))
         return JsonResponse(result.to_dict(), status=400)
 
+# 根据订单id查询
 @token_required
 @require_GET
 def get_order_view(request):
     try:
         id = request.GET.get('id')
-        order = Order.objects.get(order_id=id)  # 根据用户 ID 查询订单
+        order = Order.objects.get(order_id=id)  
+        items = OrderItem.objects.filter(order_id=order)
         
-        # 将订单对象转换为字典列表
+        # 计算总金额
+        total_amount = sum(item.product['price'] * item.product['count'] for item in items)
+        
+        # 将订单对象转换为字典
         order_data = {
             'id': order.order_id,
             'deliveryTime': order.delivery_time,
-            'products': order.products,
+            'products': [{
+                'id': item.product['id'],
+                'name': item.product['name'],
+                'price': item.product['price'],
+                'image': item.product['image'],
+                'count': item.product['count'],
+            } for item in items],
             'orderStatus': order.order_status,
-            'amount': order.amount,
+            'amount': total_amount,
+            'createdTime': items[0].created_time,
         }
         
         result = Result.success_with_data(order_data)  # 使用转换后的字典列表
@@ -76,9 +94,10 @@ def get_order_view(request):
         result = Result.error(str(e))
         return JsonResponse(result.to_dict(), status=400)
         
+# 修改一整个订单
 @csrf_exempt
 @require_http_methods('PUT')
-# @token_required
+@token_required
 def update_order_view(request):
     try:
         data = json.loads(request.body)
@@ -90,24 +109,30 @@ def update_order_view(request):
         # 更新订单字段
         if 'deliveryTime' in data:
             order.delivery_time = data['deliveryTime']
-        if 'products' in data:
-            order.products = data['products']
         if 'address' in data:
             address_instance = get_object_or_404(Address, address_id=data['address'])
             order.address = address_instance
         if 'orderStatus' in data:
             order.order_status = data['orderStatus']
+                
         
         order.save()  # 保存更新
+        
+        # 查询与订单关联的所有OrderItem
+        order_items = OrderItem.objects.filter(order=order)
+        
+        if 'orderStatus' in data:
+            if data['orderStatus'] == '1' or data['orderStatus'] == '2':
+                # 更新所有关联order_items的item_status
+                order_items.update(item_status=data['orderStatus'])
         
         # 将更新后的订单对象转换为字典
         order_data = {
             'id': order.order_id,
             'deliveryTime': order.delivery_time,
-            'products': order.products,
-            'address': order.address.address_id,
+            'products': [item.product for item in order_items],
+            'address': str(order.address.address_id),
             'orderStatus': order.order_status,
-            'amount': order.amount,
         }
         
         result = Result.success_with_data(order_data)  # 使用转换后的字典
@@ -117,24 +142,34 @@ def update_order_view(request):
         result = Result.error(str(e))
         return JsonResponse(result.to_dict(), status=400)
     
-@token_required
+# @token_required
 @require_GET
 def get_order_by_user_id_view(request):
     try:
         user_id = request.GET.get('userId')
-        orders = Order.objects.filter(user=user_id)  # 根据用户 ID 查询订单
+        orders = Order.objects.filter(user_id=user_id)  # 根据用户 ID 查询订单
         
         # 将订单对象转换为字典列表
         orders_data = []
-        orders_data.push({
-            'id': order.order_id,
-            'deliveryTime': order.delivery_time,
-            'products': order.products,
-            'orderStatus': order.order_status,
-            'amount': order.amount,
-            'createdTime': order.created_time,
-            'updatedTime': order.updated_time,
-        } for order in orders)
+        for order in orders:
+            # 查询与订单关联的所有OrderItem
+            order_items = OrderItem.objects.filter(order=order)
+
+            # 记录金额
+            amount = sum(item.product['price'] * item.product['count'] for item in order_items)
+            
+            orders_data.append({
+                'id': str(order.order_id),
+                'deliveryTime': order.delivery_time,
+                'products': [{
+                    'id': str(item.item_id),
+                    'status': item.item_status,
+                    'product': item.product,
+                    'createdTime': item.created_time,
+                    'updatedTime': item.updated_time,
+                } for item in order_items],
+                'amount': amount,
+            })
         
         result = Result.success_with_data(orders_data)  # 使用转换后的字典列表
         return JsonResponse(result.to_dict())
