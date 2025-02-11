@@ -40,19 +40,27 @@ class Order(models.Model):
         verbose_name = "订单"
         verbose_name_plural = "订单列表"
 
+# class OrderItem(models.Model):
+#     STATUS_CHOICES = [
+#         ('0', 'Unpaid'),        #未支付
+#         ('1', 'Paid'),          #已支付
+#         ('2', 'Canceled'),      #已取消
+#         ('3', 'Undelivered'),   #已发货
+#         ('4', 'Delivered'),     #已送达
+#         ('5', 'Received'),      #已签收
+#         ('6', 'Unrefunded'),    #未退款
+#         ('7', 'Refunded'),      #已退款
+#         ('8', 'Done'),          #已完成
+#     ]
 class OrderItem(models.Model):
     STATUS_CHOICES = [
-        ('0', 'Unpaid'),        #未支付
-        ('1', 'Paid'),          #已支付
-        ('2', 'Canceled'),      #已取消
-        ('3', 'Undelivered'),   #已发货
-        ('4', 'Delivered'),     #已送达
-        ('5', 'Received'),      #已签收
-        ('6', 'Unrefunded'),    #未退款
-        ('7', 'Refunded'),      #已退款
-        ('8', 'Done'),          #已完成
+        (3, '待发货'),   # Undelivered
+        (4, '已送达'),   # Delivered
+        (5, '已签收'),   # Received
+        (7, '已退款'),   # Refunded
+        (8, '已完成')    # Done
     ]
-
+    
     item_id = models.CharField(primary_key=True, max_length=255)
     item_status = models.CharField(max_length=1, choices=STATUS_CHOICES, default='0', verbose_name="订单商品状态")
     product = models.JSONField(default=dict, verbose_name="商品快照")
