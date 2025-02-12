@@ -10,6 +10,8 @@ from .models import Order, OrderItem
 from django.shortcuts import get_object_or_404
 from product.models import Product
 from django.core.paginator import Paginator, EmptyPage
+from django.db.models import Q
+
 @require_POST
 # @token_required
 @csrf_exempt
@@ -148,39 +150,101 @@ def update_order_view(request):
 def get_order_by_user_id_view(request):
     try:
         user_id = request.GET.get('userId')
-        status = request.GET.get('status')
+        if not user_id:
+            return JsonResponse({'code': 400, 'message': 'Missing userId parameter'}, status=400)
+            
+        status = request.GET.get('itemStatus')
         page = int(request.GET.get('page', 1))
         page_size = int(request.GET.get('page_size', 2))
 
-        # 构建基础查询
-        query_params = {'user_id': user_id}
+        # 修改验证列表为字符串格式
+        valid_statuses = ['0','1','2','3','4','5','6','7','8','all','undefined']
+        if status and status not in valid_statuses:
+            return JsonResponse({'code': 400, 'message': 'Invalid status value'}, status=400)
+
+        print(f"接收参数 - userId: {user_id}, itemStatus: {status}, page: {page}, page_size: {page_size}")  # 添加调试日志
+        print(f"生成查询条件: {Q(order__user_id=user_id)}")  # 添加调试日志
+
+        # 新过滤逻辑：先找符合条件的订单ID
         if status and status not in ['all', 'undefined']:
-            query_params['order_status'] = status
+            filtered_order_ids = OrderItem.objects.filter(
+                Q(order__user_id=user_id) & 
+                Q(item_status=status)
+            ).values_list('order_id', flat=True).distinct()
+            print(f"找到符合条件订单ID: {list(filtered_order_ids)}")  # 添加调试日志
+            
+            # 获取这些订单的所有商品项
+            order_items = OrderItem.objects.filter(
+                order_id__in=filtered_order_ids
+            ).select_related('order')
+        else:
+            # 无状态过滤时获取全部
+            order_items = OrderItem.objects.filter(
+                order__user_id=user_id
+            ).select_related('order')
 
-        # 获取订单并分页 (使用 order_id 排序)
-        orders = Order.objects.filter(**query_params).order_by('-order_id')
-        paginator = Paginator(orders, page_size)
-        page_obj = paginator.get_page(page)
+        if not order_items.exists():
+            return JsonResponse({
+                'code': 200,
+                'message': 'success',
+                'data': {
+                    'count': 0,
+                    'results': [],
+                    'page': page,
+                    'page_size': page_size
+                }
+            }, status=200)
 
-        # 处理订单数据
+        # 处理订单分组和排序
+        orders_map = {}
+        for item in order_items:
+            order = item.order
+            if order.order_id not in orders_map:
+                orders_map[order.order_id] = {
+                    'order': order,
+                    'items': [],
+                    'latest_time': item.created_time
+                }
+            orders_map[order.order_id]['items'].append(item)
+            if item.created_time > orders_map[order.order_id]['latest_time']:
+                orders_map[order.order_id]['latest_time'] = item.created_time
+
+        # 按最新时间排序订单
+        sorted_orders = sorted(orders_map.values(), key=lambda x: x['latest_time'], reverse=True)
+
+        # 分页处理
+        paginator = Paginator(sorted_orders, page_size)
+        try:
+            page_obj = paginator.page(page)
+        except EmptyPage:
+            return JsonResponse({'code': 400, 'message': 'Invalid page number'}, status=400)
+
+        # 构建响应数据
         orders_data = []
-        for order in page_obj:
-            order_items = OrderItem.objects.filter(order=order)
-            total_amount = sum(item.product['price'] * item.product['count'] for item in order_items)
+        for order_group in page_obj:
+            order = order_group['order']
+            items = order_group['items']
+            
+            total_amount = sum(item.product['price'] * item.product['count'] for item in items)
+            
+            status = max(int(item.item_status) for item in items)  # 先转换为数字比较
+            status = str(status)  # 再转回字符串保持类型一致
             
             orders_data.append({
                 'id': str(order.order_id),
-                'status': order.order_status,
+                'created_time': order_group['latest_time'].isoformat(),
+                'status': status,
                 'total_price': total_amount,
                 'post_fee': order.post_fee if hasattr(order, 'post_fee') else 0,
                 'items': [{
                     'id': item.item_id,
+                    'item_status': item.item_status,
                     'name': item.product.get('name', '未知商品'),
                     'image': item.product.get('image', ''),
-                    'specs': item.product.get('specs', {}),
+                    'created_time': item.created_time.isoformat(),
                     'price': item.product['price'],
                     'quantity': item.product['count']
-                } for item in order_items]
+                } for item in items]
             })
 
         return JsonResponse({
@@ -195,7 +259,10 @@ def get_order_by_user_id_view(request):
         }, status=200)
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()  # 打印完整错误堆栈
         return JsonResponse({
             'code': 500,
-            'message': str(e)
+            'message': f'Server error: {str(e)}',
+            'detail': traceback.format_exc()  # 仅在开发环境保留
         }, status=500)
