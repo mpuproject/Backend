@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'image',
     'address',
     'order',
+    'comment',
 ]
 
 MIDDLEWARE = [
@@ -71,7 +72,7 @@ REST_FRAMEWORK = {
 from datetime import timedelta
 # JWT 配置
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),  # Access Token 有效期
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),  # Access Token 有效期
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),     # Refresh Token 有效期
     'ROTATE_REFRESH_TOKENS': True,                  # 是否在刷新时生成新的 Refresh Token
     'BLACKLIST_AFTER_ROTATION': True,                # 是否将旧的 Refresh Token 加入黑名单
@@ -88,6 +89,8 @@ SIMPLE_JWT = {
     'USER_ID_FIELD': 'id',                           # 用户标识字段
     'USER_ID_CLAIM': 'user_id',                      # Token 中的用户标识字段
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),  # Token 类型
+    'TOKEN_OBTAIN_SERIALIZER': 'user.serializers.CustomTokenObtainPairSerializer',
+    'TOKEN_REFRESH_SERIALIZER': 'user.serializers.CustomTokenRefreshSerializer',
 }
 
 AUTH_USER_MODEL = 'user.User'  # Customized User

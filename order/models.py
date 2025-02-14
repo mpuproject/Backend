@@ -43,7 +43,7 @@ class Order(models.Model):
 class OrderItem(models.Model):
     STATUS_CHOICES = [
         ('0', 'Unpaid'),        #未支付
-        ('1', 'Paid'),          #已支付
+        ('1', 'Paid'),          #已支付，未发货
         ('2', 'Canceled'),      #已取消
         ('3', 'Undelivered'),   #已发货
         ('4', 'Delivered'),     #已送达

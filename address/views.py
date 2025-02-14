@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from user.models import User
 
-# @token_required
+@token_required
 @require_GET
 def get_address_view(request):
     user_id = request.GET.get('id')
@@ -35,7 +35,7 @@ def get_address_view(request):
         result = Result.error('Address not found')
         return JsonResponse(result.to_dict())
     
-# @token_required
+@token_required
 @require_POST
 @csrf_exempt
 def add_address_view(request):
@@ -64,7 +64,7 @@ def add_address_view(request):
         # 检查用户是否已有地址
         has_existing_address = address_count > 0
         
-        address_data = {
+        address = {
             'user': user,
             'address_tag': data.get('tag', ''),
             'recipient_name': data.get('recipient'),
@@ -78,9 +78,22 @@ def add_address_view(request):
         }
         
         # 创建新地址
-        Address.objects.create(**address_data)
+        addr = Address.objects.create(**address)
+
+        address_data = {
+            'id': addr.address_id,
+            'tag': addr.address_tag,
+            'recipient': addr.recipient_name,
+            'phone': addr.phone,
+            'province': addr.province,
+            'city': addr.city,
+            'district': addr.district,
+            'additional_addr': addr.additional_address,
+            'postal_code': addr.postal_code,
+            'is_default': addr.is_default,
+        }
         
-        result = Result.success()
+        result = Result.success_with_data(address_data)
         return JsonResponse(result.to_dict(), status=201)
         
     except Exception as e:
