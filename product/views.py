@@ -59,7 +59,7 @@ class SearchView(APIView):
         category_id = request.query_params.get('category', None)  # 一级分类 ID
         page = request.query_params.get('page', 1)  # 当前页码
         page_size = request.query_params.get('pageSize', 10)  # 每页大小
-        sort_field = request.query_params.get('sortField', 'created_time')  # 按何种搜索方法排序
+        sort_field = request.query_params.get('sortField', 'default')  # 按何种搜索方法排序
 
         try:
             page = int(page)
@@ -92,7 +92,10 @@ class SearchView(APIView):
                 )
             ).filter(Q(product_name__icontains=query) | Q(product_desc__icontains=query))
 
-        products = products.order_by(f'-{sort_field}')
+        if sort_field == 'created_time':
+            products = products.order_by(f'{sort_field}')
+        elif sort_field == 'product_rating':
+            products = products.order_by(f'-{sort_field}')
 
         # 分页
         start = (page - 1) * page_size
@@ -118,10 +121,10 @@ class SearchView(APIView):
         })
         return JsonResponse(result.to_dict())
 
+@require_POST
 @token_required
 @admin_required
 @csrf_exempt
-@require_POST
 def add_product_view(request):
     try:
         # 解析请求体中的JSON数据
@@ -159,10 +162,10 @@ def add_product_view(request):
         result = Result.error(f'Failed to add product: {str(e)}')
         return JsonResponse(result.to_dict(), status=500)
 
+@require_http_methods(['PUT'])
 @token_required
 @admin_required
 @csrf_exempt
-@require_http_methods(['PUT'])
 def update_product_view(request, id):
     try:
         # 解析请求体中的JSON数据
@@ -206,10 +209,10 @@ def update_product_view(request, id):
         result = Result.error(f'Failed to update product: {str(e)}')
         return JsonResponse(result.to_dict(), status=500)
 
-@admin_required
-@token_required
-@csrf_exempt
 @require_http_methods(["PATCH"])
+@token_required
+@admin_required
+@csrf_exempt
 def delete_product_view(request, id):
     try:
         # 获取产品对象
@@ -228,9 +231,9 @@ def delete_product_view(request, id):
         result = Result.error(f'Failed to delete product: {str(e)}')
         return JsonResponse(result.to_dict(), status=500)
     
-@admin_required
-@token_required
 @require_GET
+@token_required
+@admin_required
 def get_product_view(request):
     try:
         page = int(request.GET.get('page', 1))  # 默认第一页
@@ -274,9 +277,9 @@ def get_product_view(request):
         result = Result.error(f'Failed to get products: {str(e)}')
         return JsonResponse(result.to_dict(), status=500)
     
+@require_GET
 @token_required
 @admin_required
-@require_GET
 def get_product_inventory_status_view(request):
     # 获取库存紧张的产品
     low_stock_products = Product.objects.filter(
@@ -298,9 +301,9 @@ def get_product_inventory_status_view(request):
     result = Result.success_with_data(data)
     return JsonResponse(result.to_dict())
 
-@token_required
-@admin_required
 @require_GET
+@admin_required
+@token_required
 def get_admin_product_view(request, pk):
     try:
         # 使用 pk 查询商品

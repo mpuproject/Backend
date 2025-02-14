@@ -9,16 +9,17 @@ class Comment(models.Model):
     comment_desc = models.TextField(default='The user didn\'t say anything', verbose_name="评价描述")
     created_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
     updated_time = models.DateTimeField(auto_now=True, verbose_name="更新时间")
+    images = models.JSONField(default=list, verbose_name='评论图片')
     
     
-    user_id = models.ForeignKey(
+    user = models.ForeignKey(
         User,
         on_delete=models.DO_NOTHING,
         related_name='comments',
         verbose_name='用户'
     )
 
-    product_id = models.ForeignKey(
+    product = models.ForeignKey(
         Product,
         on_delete=models.CASCADE,
         related_name='comments',

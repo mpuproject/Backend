@@ -1,13 +1,15 @@
 from django.http import JsonResponse
 from django.contrib.auth import authenticate
-from rest_framework_simplejwt.tokens import RefreshToken
 from django.views.decorators.csrf import csrf_exempt
 import json
 from common.result.result import Result
 from .models import User
 from ecommerce.settings import MEDIA_URL
 import uuid
+from .serializers import CustomTokenObtainPairSerializer
+from django.views.decorators.http import require_POST
 
+@require_POST
 @csrf_exempt  # 禁用 CSRF 验证（仅用于测试，生产环境需要启用）
 def login_view(request):
     if request.method == 'POST':
@@ -18,10 +20,12 @@ def login_view(request):
             
             user = authenticate(username=username, password=password)
             if user is not None:
-                refresh = RefreshToken.for_user(user)
+                # 使用自定义的序列化器生成token
+                serializer = CustomTokenObtainPairSerializer()
+                token = serializer.get_token(user)
                 
-                access_token = str(refresh.access_token)
-                refresh_token = str(refresh) 
+                access_token = str(token.access_token)
+                refresh_token = str(token)
                 result = Result.success_with_data({
                     "id": user.id,
                     "username": user.username,
@@ -41,6 +45,7 @@ def login_view(request):
         result = Result.error("Only POST is supported")
         return JsonResponse(result.to_dict(), status=405)
     
+@require_POST
 @csrf_exempt
 def signup_view(request):
     if request.method == 'POST':
@@ -48,11 +53,13 @@ def signup_view(request):
             data = json.loads(request.body)
             username = data.get('username')
             email = data.get('email')
+            first_name = data.get('firstName')
+            last_name = data.get('lastName')
             password = data.get('password')
             confirm_password = data.get('confirmPwd')
             is_staff = data.get('is_staff', 0)
 
-            if not username or not email or not password or not confirm_password:
+            if not username or not email or not first_name or not last_name or not password or not confirm_password:
                 result = Result.error('All fields are required')
                 return JsonResponse(result.to_dict(), status=400)
 
@@ -73,10 +80,17 @@ def signup_view(request):
                 id=uuid.uuid4(),
                 username=username,
                 email=email,
+                first_name=first_name,
+                last_name=last_name,
                 password=password,
                 profile_picture=MEDIA_URL+'200.png',
                 is_staff=is_staff,
             )
+
+            # 使用自定义的序列化器生成token
+            serializer = CustomTokenObtainPairSerializer()
+            token = serializer.get_token(user)
+            access_token = str(token.access_token)
 
             # success
             result = Result.success_with_data({
@@ -84,6 +98,7 @@ def signup_view(request):
                     'id': str(user.id),
                     'username': user.username,
                     'email': user.email,
+                    'access': access_token,
                 },
             })
             return JsonResponse(result.to_dict(), status=201)

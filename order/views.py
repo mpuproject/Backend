@@ -36,6 +36,14 @@ def create_order_view(request):
 
         # 创建订单下的商品
         for index, item in enumerate(items):
+            # 查询商品并减少库存
+            product = get_object_or_404(Product, product_id=item['id'])
+            if product.stock_quantity < item['count']:
+                raise Exception(f"{product.product_name} is understock")
+            product.stock_quantity -= item['count']
+            product.save()
+
+
             OrderItem.objects.create(
                 item_status='0',     #默认状态为未支付
                 product=item,
@@ -51,8 +59,7 @@ def create_order_view(request):
             'address': order.address.address_id,
             'order_status': order.order_status        #默认为未支付
         }
-        
-        result = Result.success_with_data(order_data)  # 使用转换后的字典
+        result = Result.success_with_data(order_data)
         return JsonResponse(result.to_dict(), status=201)
         
     except Exception as e:
@@ -60,8 +67,8 @@ def create_order_view(request):
         return JsonResponse(result.to_dict(), status=400)
 
 # 根据订单id查询
-@token_required
 @require_GET
+@token_required
 def get_order_view(request):
     try:
         id = request.GET.get('id')
