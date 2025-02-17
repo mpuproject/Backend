@@ -123,16 +123,7 @@ def update_order_view(request):
             address_instance = get_object_or_404(Address, address_id=data['address'])
             order.address = address_instance
         if 'orderStatus' in data:
-            order.order_status = data['orderStatus']
-        # 在update_order_view中增加商品级处理
-        if data.get('is_item'):
-            item = get_object_or_404(OrderItem, item_id=data['id'])
-            item.item_status = data['orderStatus']
-            item.save()
-        else:
-            order = Order.objects.get(order_id=data['id'])
-            order.order_status = data['orderStatus']
-            order.save()               
+            order.order_status = data['orderStatus']             
         
         order.save()  # 保存更新
         
@@ -159,7 +150,52 @@ def update_order_view(request):
     except Exception as e:
         result = Result.error(str(e))
         return JsonResponse(result.to_dict(), status=400)
-    
+
+@csrf_exempt
+@require_http_methods(['PUT'])
+def update_order_item_view(request):
+    try:
+        # Add JSON parsing validation
+        if not request.body:
+            return JsonResponse({'code': 400, 'message': 'Empty request body'}, status=400)
+            
+        data = json.loads(request.body)
+        item_id = data.get('item_id')
+        item_status = data.get('item_status')
+        
+        if not item_id or not item_status:
+            return JsonResponse({
+                'code': 400,
+                'message': 'Missing required parameters: item_id or item_status'
+            }, status=400)
+
+        # 精确查询订单项
+        item = get_object_or_404(OrderItem, item_id=item_id)
+        item.item_status = item_status
+        item.save()
+
+        return JsonResponse({
+            'code': 200,
+            'data': {
+                'item_id': item.item_id,
+                'item_status': item_status,
+                'updated_time': item.updated_time.isoformat()
+            }
+        }, status=200)
+
+    except json.JSONDecodeError:
+        return JsonResponse({'code': 400, 'message': 'Invalid JSON format'}, status=400)
+    except OrderItem.DoesNotExist:
+        return JsonResponse({
+            'code': 404,
+            'message': f'Order item {item_id} not found'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'code': 500,
+            'message': f'Server error: {str(e)}'
+        }, status=500)
+        
 # @token_required
 @require_GET
 def get_order_by_user_id_view(request):
@@ -281,3 +317,38 @@ def get_order_by_user_id_view(request):
             'message': f'Server error: {str(e)}',
             'detail': traceback.format_exc()  # 仅在开发环境保留
         }, status=500)
+    
+# @require_GET
+# def get_order_detail_view(request, order_id):  # 接收路径参数
+#     try:
+#         user_id = request.GET.get('user_id')  # 使用下划线命名
+#         if not all([order_id, user_id]):
+#             return JsonResponse({'code':400, 'message':'缺少必要参数'}, status=400)
+
+#         # 使用与订单列表相同的查询方式
+#         order = Order.objects.get(order_id=order_id, user_id=user_id)
+#         items = OrderItem.objects.filter(order=order).select_related('product')
+#         print(f"请求参数 order_id: {order_id}, user_id: {user_id}")
+#         print(f"请求路径: {request.get_full_path()}")
+#         # 保持与订单列表接口相同的数据结构
+#         response_data = {
+#             'id': str(order.order_id),
+#             'created_time': order.created_time.isoformat(),
+#             'status': order.order_status,
+#             'total_price': sum(item.product.price * item.quantity for item in items),
+#             'post_fee': order.post_fee,
+#             'items': [{
+#                 'id': item.item_id,
+#                 'item_status': item.item_status,
+#                 'name': item.product.name,
+#                 'image': item.product.image.url if item.product.image else '',
+#                 'specs': item.specs,  # 保持原始数据结构
+#                 'price': float(item.product.price),
+#                 'quantity': item.quantity
+#             } for item in items]
+#         }
+#         return JsonResponse({'code':200, 'data': response_data})
+#     except Order.DoesNotExist:
+#         return JsonResponse({'code': 404, 'message': 'Order not found'}, status=404)
+#     except Exception as e:
+#         return JsonResponse({'code': 500, 'message': f'Server error: {str(e)}'}, status=500)
