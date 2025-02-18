@@ -39,7 +39,9 @@ def get_subcategory_products_view(request):
         sub_category_id = body.get('subCategoryId')  # 二级分类 ID
         page = body.get('page', 1)  # 当前页码，默认为 1
         page_size = body.get('pageSize', 20)  # 每页数量，默认为 20
-        sort_field = body.get('sortField', 'created_time')  # 排序字段，默认为 created_time
+        sort_field = body.get('sortField', 'default')  # 排序字段，默认为 created_time
+        min_price = body.get('sortMin')  # 最小价格
+        max_price = body.get('sortMax')  # 最大价格
 
         # 验证二级分类是否存在
         try:
@@ -48,8 +50,26 @@ def get_subcategory_products_view(request):
             result = Result.error("Subcategory not found")
             return JsonResponse(result.to_dict(), status=404)
 
+        products = Product.objects.filter(
+                sub_category=sub_category, 
+                status='1', 
+                is_deleted=False
+            )
+
+        # 添加价格区间筛选
+        if min_price is not None:
+            products = products.filter(price__gte=min_price)
+        if max_price is not None:
+            products = products.filter(price__lte=max_price)
+
         # 获取二级分类下的所有可用产品，并按指定字段排序
-        products = Product.objects.filter(sub_category=sub_category, status='1', is_deleted=False).order_by(sort_field)
+        if sort_field == 'created_time':
+            products = products.order_by(f'-{sort_field}')
+        elif sort_field == 'product_rating':
+            products = products.order_by(f'-{sort_field}')
+        elif 'price' in sort_field:
+            products = products.order_by(f'{sort_field}')
+        
 
         # 分页处理
         paginator = Paginator(products, page_size)
@@ -99,10 +119,10 @@ def get_subcategory_products_view(request):
     except json.JSONDecodeError:
         result = Result.error("Invalid JSON format in request body")
         return JsonResponse(result.to_dict(), status=400)
-    
-@admin_required
+
+@require_GET    
 @token_required
-@require_GET
+@admin_required
 def get_subcategory_view(request):
     subList = SubCategory.objects.all()
     

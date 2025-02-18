@@ -59,7 +59,7 @@ def create_order_view(request):
             'delivery_time': order.delivery_time,
             'user': order.user.id,
             'address': order.address.address_id,
-            'order_status': order.order_status        #默认为未支付
+            'order_status': order.order_status
         }
         result = Result.success_with_data(order_data)
         return JsonResponse(result.to_dict(), status=201)

@@ -302,8 +302,8 @@ def get_product_inventory_status_view(request):
     return JsonResponse(result.to_dict())
 
 @require_GET
-@admin_required
 @token_required
+@admin_required
 def get_admin_product_view(request, pk):
     try:
         # 使用 pk 查询商品

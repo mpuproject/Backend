@@ -110,8 +110,8 @@ def add_category_view(request):
         result = Result.error('Invalid JSON format in request body')
         return JsonResponse(result.to_dict(), status=400)
 
-@admin_required
 @token_required
+@admin_required
 @require_GET
 def get_all_categories_view(request):
     categories = Category.objects.all()
