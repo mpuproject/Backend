@@ -60,6 +60,8 @@ class SearchView(APIView):
         page = request.query_params.get('page', 1)  # 当前页码
         page_size = request.query_params.get('pageSize', 10)  # 每页大小
         sort_field = request.query_params.get('sortField', 'default')  # 按何种搜索方法排序
+        min_price = request.query_params.get('sortMin')  # 最小价格
+        max_price = request.query_params.get('sortMax')  # 最大价格
 
         try:
             page = int(page)
@@ -92,10 +94,18 @@ class SearchView(APIView):
                 )
             ).filter(Q(product_name__icontains=query) | Q(product_desc__icontains=query))
 
+        # 添加价格区间筛选
+        if min_price is not None:
+            products = products.filter(price__gte=min_price)
+        if max_price is not None:
+            products = products.filter(price__lte=max_price)
+
         if sort_field == 'created_time':
-            products = products.order_by(f'{sort_field}')
+            products = products.order_by(f'-{sort_field}')
         elif sort_field == 'product_rating':
             products = products.order_by(f'-{sort_field}')
+        elif 'price' in sort_field:
+            products = products.order_by(f'{sort_field}')
 
         # 分页
         start = (page - 1) * page_size
