@@ -196,13 +196,15 @@ def update_product_view(request, id):
         if 'description' in data:
             product.product_desc = data['description']
         if 'stock_quantity' in data:
-            product.stock_quantity = data['stockQuantity']
+            product.stock_quantity += data['stock_quantity']
         if 'low_stock_threshold' in data:
-            product.low_stock_threshold = data['lowStockThreshold']
+            product.low_stock_threshold = data['low_stock_threshold']
         if 'images' in data:
             product.images = data['images']
-        if 'sub_category_id' in data:
-            product.sub_category = data['subCategoryId']
+        if 'sub_category' in data:
+            sub_id = data['sub_category'][1]
+            subCate = SubCategory.objects.get(sub_cate_id = sub_id)
+            product.sub_category = subCate
         if 'details' in data:
             product.product_details = data['details']
         if 'status' in data:
@@ -217,6 +219,7 @@ def update_product_view(request, id):
     
     except Exception as e:
         result = Result.error(f'Failed to update product: {str(e)}')
+        print(str(e))
         return JsonResponse(result.to_dict(), status=500)
 
 @require_http_methods(["PATCH"])
