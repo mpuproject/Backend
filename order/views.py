@@ -210,7 +210,7 @@ def get_order_by_user_id_view(request):
         page_size = int(request.GET.get('page_size', 2))
 
         # 修改验证列表为字符串格式
-        valid_statuses = ['0','1','2','3','4','5','6','7','8','all','undefined']
+        valid_statuses = ['0','1','2','3','4','5','6','7','8','9','10','all','undefined']
         if status and status not in valid_statuses:
             return JsonResponse({'code': 400, 'message': 'Invalid status value'}, status=400)
 

@@ -43,7 +43,7 @@ class Order(models.Model):
 class OrderItem(models.Model):
     STATUS_CHOICES = [
         ('0', 'Unpaid'),        #未支付
-        ('1', 'Paid'),          #已支付，未发货
+        ('1', 'Paid'),          #已支付
         ('2', 'Canceled'),      #已取消
         ('3', 'Undelivered'),   #已发货
         ('4', 'Delivered'),     #已送达
@@ -51,6 +51,8 @@ class OrderItem(models.Model):
         ('6', 'Unrefunded'),    #未退款
         ('7', 'Refunded'),      #已退款
         ('8', 'Done'),          #已完成
+        ('9', 'Pending'),       #待处理
+        ('10', 'Hold'),         #已接单，未发货
     ]
 # class OrderItem(models.Model):
 #     STATUS_CHOICES = [
@@ -61,7 +63,7 @@ class OrderItem(models.Model):
 #         (8, '已完成')    # Done
 #     ]
     item_id = models.CharField(primary_key=True, max_length=255)
-    item_status = models.CharField(max_length=1, choices=STATUS_CHOICES, default='0', verbose_name="订单商品状态")
+    item_status = models.CharField(max_length=2, choices=STATUS_CHOICES, default='0', verbose_name="订单商品状态")
     product = models.JSONField(default=dict, verbose_name="商品快照")
 
     order = models.ForeignKey(Order, on_delete=models.CASCADE, verbose_name='订单')
