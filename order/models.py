@@ -43,7 +43,7 @@ class Order(models.Model):
 class OrderItem(models.Model):
     STATUS_CHOICES = [
         ('0', 'Unpaid'),        #未支付
-        ('1', 'Paid'),          #已支付
+        ('1', 'Paid'),          #已支付，待处理
         ('2', 'Canceled'),      #已取消
         ('3', 'Undelivered'),   #已发货
         ('4', 'Delivered'),     #已送达
@@ -51,8 +51,7 @@ class OrderItem(models.Model):
         ('6', 'Unrefunded'),    #未退款
         ('7', 'Refunded'),      #已退款
         ('8', 'Done'),          #已完成
-        ('9', 'Pending'),       #待处理
-        ('10', 'Hold'),         #已接单，未发货
+        ('9', 'Hold'),          #已接单，未发货
     ]
 # class OrderItem(models.Model):
 #     STATUS_CHOICES = [
