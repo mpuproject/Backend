@@ -11,6 +11,8 @@ from django.shortcuts import get_object_or_404
 from product.models import Product
 from django.core.paginator import Paginator, EmptyPage
 from django.db.models import Q
+from django.utils import timezone
+from comment.models import Comment
 
 @require_POST
 @token_required
@@ -133,7 +135,7 @@ def update_order_view(request):
         if 'orderStatus' in data:
             if data['orderStatus'] == '1' or data['orderStatus'] == '2':
                 # 更新所有关联order_items的item_status
-                order_items.update(item_status=data['orderStatus'])
+                order_items.update(item_status=data['orderStatus'], updated_time=timezone.now())
         
         # 将更新后的订单对象转换为字典
         order_data = {
@@ -311,3 +313,34 @@ def get_order_by_user_id_view(request):
             'code': 500,
             'message': f'Server error: {str(e)}',
         }, status=500)
+    
+@require_GET
+@token_required
+def get_order_item_view(request):
+    try: 
+        item_id = request.GET.get('id')
+        if not item_id:
+            return JsonResponse({'code': 400, 'message': 'Missing id parameter'}, status=400)
+            
+        # 获取订单项
+        order_item = get_object_or_404(OrderItem, item_id=item_id)
+        
+        # 检查是否有评论
+        is_commented = Comment.objects.filter(order_item=order_item).exists()
+        
+        # 构建返回数据
+        result = Result.success_with_data({
+            'orderItemId': order_item.item_id,
+            'product': order_item.product,
+            'isCommented': is_commented,
+        })
+        
+        return JsonResponse(result.to_dict(), status=200)
+        
+    except OrderItem.DoesNotExist:
+        result = Result.error('Order item not found')
+        return JsonResponse(result.to_dict(), status=404)
+    except Exception as e:
+        result = Result.error(f'Server error: {str(e)}')
+        return JsonResponse(result.to_dict(), status=500)
+        

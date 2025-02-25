@@ -53,14 +53,7 @@ class OrderItem(models.Model):
         ('8', 'Done'),          #已完成
         ('9', 'Hold'),          #已接单，未发货
     ]
-# class OrderItem(models.Model):
-#     STATUS_CHOICES = [
-#         (3, '待发货'),   # Undelivered
-#         (4, '已送达'),   # Delivered
-#         (5, '已签收'),   # Received
-#         (7, '已退款'),   # Refunded
-#         (8, '已完成')    # Done
-#     ]
+
     item_id = models.CharField(primary_key=True, max_length=255)
     item_status = models.CharField(max_length=2, choices=STATUS_CHOICES, default='0', verbose_name="订单商品状态")
     product = models.JSONField(default=dict, verbose_name="商品快照")
