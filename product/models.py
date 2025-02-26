@@ -22,6 +22,7 @@ class Product(models.Model):
     #商品详细信息
     product_details = JSONField(default=list, verbose_name="商品详细信息")
     product_rating = models.FloatField(default=0.0, verbose_name="商品评分")
+    rating_num = models.IntegerField(default=0, verbose_name="评论次数")
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='0', verbose_name="商品状态")
     created_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")

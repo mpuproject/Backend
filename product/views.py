@@ -357,3 +357,58 @@ def get_admin_product_view(request, pk):
 
     result = Result.success_with_data(product_data)
     return JsonResponse(result.to_dict())
+
+@require_GET
+def get_product_recommend_view(request):
+    try:
+        # 获取查询参数
+        query = request.GET.get('name', '')
+        product_id = request.GET.get('id')  # 新增：获取当前产品ID
+        if not query or not product_id:
+            result = Result.error('Query parameter and product_id are required')
+            return JsonResponse(result.to_dict(), status=400)
+
+        # 按空格分割查询字符串
+        keywords = query.split()
+        
+        # 初始化查询集，排除当前产品
+        products = Product.objects.filter(status='1', is_deleted=False).exclude(product_id=product_id)
+        
+        # 对每个关键词进行模糊查询
+        all_results = []
+        for keyword in keywords:
+            # 使用 Q 对象进行模糊查询
+            matched_products = products.filter(Q(product_name__icontains=keyword))
+            all_results.extend(matched_products)
+        
+        # 去重
+        unique_results = list(set(all_results))
+        
+        # 如果结果不足4个，返回所有结果
+        if len(unique_results) <= 4:
+            selected_products = unique_results
+        else:
+            # 随机选取4个产品
+            import random
+            selected_products = random.sample(unique_results, 4)
+        
+        # 格式化结果
+        products_data = []
+        for product in selected_products:
+            products_data.append({
+                'id': product.product_id,
+                'name': product.product_name,
+                'description': product.product_desc,
+                'price': str(product.price),
+                'images': product.images[0] if product.images else '',
+                'sub_category': product.sub_category.sub_cate_name,
+                'category': product.sub_category.category.category_name,
+            })
+
+        result = Result.success_with_data(products_data)
+        return JsonResponse(result.to_dict())
+
+    except Exception as e:
+        result = Result.error(f'Failed to get recommendations: {str(e)}')
+        return JsonResponse(result.to_dict(), status=500)
+    

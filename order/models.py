@@ -54,7 +54,7 @@ class OrderItem(models.Model):
         ('9', 'Hold'),          #已接单，未发货
     ]
 
-    item_id = models.CharField(primary_key=True, max_length=255)
+    item_id = models.CharField(primary_key=True, max_length=255, editable=False)
     item_status = models.CharField(max_length=2, choices=STATUS_CHOICES, default='0', verbose_name="订单商品状态")
     product = models.JSONField(default=dict, verbose_name="商品快照")
 
