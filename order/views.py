@@ -292,6 +292,7 @@ def get_order_by_user_id_view(request):
                     'name': item.product.get('name', '未知商品'),
                     'image': item.product.get('image', ''),
                     'created_time': item.created_time.isoformat(),
+                    'updated_time': item.updated_time.isoformat(),
                     'price': item.product['price'],
                     'quantity': item.product['count']
                 } for item in items]
