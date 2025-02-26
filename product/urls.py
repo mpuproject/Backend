@@ -10,4 +10,5 @@ urlpatterns = [
     path('list/', views.get_product_view, name='getProduct'),
     path('stock-count/', views.get_product_inventory_status_view, name='getStockCount'),
     path('admin/<uuid:pk>/', views.get_admin_product_view, name='getProduct'),
+    path('recommend/', views.get_product_recommend_view, name='getRecommendView'),
 ]

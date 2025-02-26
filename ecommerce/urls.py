@@ -30,6 +30,7 @@ urlpatterns = [
     path('image/', include('image.urls')),
     path('address/', include('address.urls')),
     path('order/', include('order.urls')),
+    path('comment/', include('comment.urls')),
 ]
 
 if settings.DEBUG:
