@@ -1,13 +1,15 @@
-管理员账户
+超级管理员账户
 username: admin
 password: MPU2025@
-
 
 
 顾客账户
 username: customer
 password: Test1234@
 
+管理员账户
+username: admin1
+password Test1234@
 
 
 运行以下脚本以下载插件：
