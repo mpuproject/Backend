@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-x8x^nbv7yy7047lr!!a4stgoyu7ch2myp7^k5&n83r1k7echno
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost']
 
 
 # Application definition
@@ -92,6 +92,10 @@ SIMPLE_JWT = {
     'TOKEN_OBTAIN_SERIALIZER': 'user.serializers.CustomTokenObtainPairSerializer',
     'TOKEN_REFRESH_SERIALIZER': 'user.serializers.CustomTokenRefreshSerializer',
 }
+
+# reCAPTCHA 配置
+RECAPTCHA_SECRET_KEY = '6Lc2P-YqAAAAACHboO5IutjU8IQVQGT7iDfCgMYI'
+RECAPTCHA_MIN_SCORE = 0.5  # 设置最低分数
 
 AUTH_USER_MODEL = 'user.User'  # Customized User
 

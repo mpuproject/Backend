@@ -32,6 +32,12 @@ def get_category_view(request):
     try:
         id = json.loads(request.body).get("id")
 
+        try:
+            uuid.UUID(id)
+        except ValueError:
+            result = Result.error("Invalid category ID format")
+            return JsonResponse(result.to_dict(), status=400)
+
         # 获取分类信息
         category = Category.objects.get(category_id=id)
 
@@ -75,6 +81,8 @@ def get_category_view(request):
     except Category.DoesNotExist:
         result = Result.error("Category not found")
         return JsonResponse(result.to_dict(), status=404)
+    
+    
     
 @csrf_exempt
 @require_POST

@@ -3,7 +3,9 @@ from django.views.decorators.http import require_GET
 from product.models import Product
 from django.http import JsonResponse
 from common.result.result import Result
-import json
+from common.utils.decorators import token_required
+from order.models import Order, OrderItem
+from user.models import User
 
 # 返回新上架商品
 @require_GET
@@ -55,3 +57,35 @@ def hot_view(request):
     #返回 JSON 响应
     result = Result.success_with_data(hot_list)
     return JsonResponse(result.to_dict())
+
+@require_GET
+@token_required
+def getMessageCount(request):
+    try:
+        user_id = request.GET.get('userId')
+        
+        # 获取用户的所有订单ID
+        order_ids = Order.objects.filter(user_id=user_id).values_list('order_id', flat=True)
+        
+        # 获取这些订单的所有OrderItems
+        order_items = OrderItem.objects.filter(order_id__in=order_ids)
+        
+        # 统计不同状态的数量
+        unpaid = order_items.filter(item_status='0').count()
+        pending = order_items.filter(item_status='1').count()
+        review = order_items.filter(item_status='5').count()
+        refunding = order_items.filter(item_status='6').count()
+        
+        # 构造返回数据
+        result = Result.success_with_data({
+            'unpaid': unpaid,
+            'pending': pending,
+            'review': review,
+            'refunding': refunding
+        })
+        return JsonResponse(result.to_dict())
+        
+    except Exception as e:
+        result = Result.error(str(e))
+        return JsonResponse(result.to_dict())
+        

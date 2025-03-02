@@ -249,6 +249,7 @@ def delete_product_view(request, id):
 @admin_required
 def get_product_view(request):
     try:
+        query = request.GET.get('q', '')
         page = int(request.GET.get('page', 1))  # 默认第一页
         page_size = int(request.GET.get('pageSize', 10))  # 默认每页10条
 
@@ -256,8 +257,18 @@ def get_product_view(request):
         start = (page - 1) * page_size
         end = start + page_size
         
+        # 获取基础查询集
+        products = Product.objects.filter(is_deleted=False)
+        
+        # 如果存在查询参数，进行模糊查询
+        if query:
+            products = products.filter(
+                Q(product_id__icontains=query) | 
+                Q(product_name__icontains=query)
+            )
+        
         # 获取分页后的产品数据
-        products = Product.objects.filter(is_deleted=False)[start:end]
+        paginated_products = products[start:end]
         
         # 格式化产品数据
         products_data = [{
@@ -274,11 +285,11 @@ def get_product_view(request):
             'category': product.sub_category.category.category_name,
             'createdTime': product.created_time.strftime('%Y-%m-%d %H:%M:%S'),
             'updatedTime': product.updated_time.strftime('%Y-%m-%d %H:%M:%S'),
-        } for product in products]
+        } for product in paginated_products]
         
         # 返回分页结果
         result = Result.success_with_data({
-            'total': Product.objects.count(),  # 总记录数
+            'total': products.count(),  # 使用过滤后的总数
             'products': products_data
         })
         return JsonResponse(result.to_dict())
