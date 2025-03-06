@@ -8,7 +8,6 @@ from product.models import Product
 from .models import Comment
 from order.models import OrderItem
 from django.shortcuts import get_object_or_404
-from user.models import User
 from django.utils import timezone
 
 # 获取商品评论详情
@@ -68,6 +67,10 @@ def add_comment_view(request):
         rating = data.get('rating')
         images = data.get('images', [])
         product_id = data.get('productId')
+
+        if not item_id or not rating or not product_id:
+            result = Result.error("Missing parameters: orderItemId / rating / productId")
+            return JsonResponse(result.to_dict(), status=400)
 
         order_item = get_object_or_404(OrderItem, item_id=item_id)
         product = get_object_or_404(Product, product_id=product_id)
@@ -138,3 +141,85 @@ def get_comment_view(request):
     except Exception as e:
         result = Result.error(str(e))
         return JsonResponse(result.to_dict(), status=400)
+    
+@require_http_methods('DELETE')
+@token_required
+@csrf_exempt
+def delete_comment_view(request):
+    try:
+        data = json.loads(request.body)
+        id = data.get('id')
+        
+        # 获取要删除的评论
+        comment = get_object_or_404(Comment, comment_id=id)
+        product = comment.product
+        
+        # 重新计算商品评分
+        if product.rating_num > 1:
+            new_rating_num = product.rating_num - 1
+            new_rating = (product.product_rating * product.rating_num - comment.rating) / new_rating_num
+            product.product_rating = new_rating
+            product.rating_num = new_rating_num
+        else:
+            # 如果这是最后一个评论，重置评分
+            product.product_rating = 0
+            product.rating_num = 0
+        
+        # 保存更新后的商品评分
+        product.save()
+        
+        # 删除评论
+        comment.delete()
+        
+        result = Result.success()
+        return JsonResponse(result.to_dict())
+
+    except Exception as e:
+        result = Result.error(str(e))
+        return JsonResponse(result.to_dict(), status=400)
+
+@require_http_methods('PUT')
+@token_required
+@csrf_exempt
+def update_comment_view(request):
+    try:
+        data = json.loads(request.body)
+        comment_id = data.get('id')
+        new_rating = data.get('rating')
+        new_content = data.get('commentDesc', 'User didn\'t say anything.')
+        new_images = data.get('images', [])
+        
+        # 获取要更新的评论
+        comment = get_object_or_404(Comment, comment_id=comment_id)
+        product = comment.product
+        
+        # 先恢复原评分
+        if product.rating_num > 0:
+            old_rating = comment.rating
+            total_rating = product.product_rating * product.rating_num - old_rating
+            
+            # 更新新评分
+            total_rating += new_rating
+            product.product_rating = total_rating / product.rating_num
+            product.save()
+        
+        # 更新评论内容
+        comment.rating = new_rating
+        comment.comment_desc = new_content
+        comment.images = new_images
+        comment.updated_time = timezone.now()
+        comment.save()
+        
+        result = Result.success_with_data({
+            'id': comment.comment_id,
+            'commentDesc': comment.comment_desc,
+            'rating': comment.rating,
+            'images': comment.images,
+            'updatedTime': comment.updated_time
+        })
+        return JsonResponse(result.to_dict())
+        
+    except Exception as e:
+        result = Result.error(str(e))
+        return JsonResponse(result.to_dict(), status=400)
+        
