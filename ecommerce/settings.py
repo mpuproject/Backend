@@ -104,6 +104,13 @@ import os
 MEDIA_URL = '/media/'   # http://localhost:8080/media/
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+CSRF_COOKIE_SAMESITE = 'None'  # 允许跨站请求
+CSRF_COOKIE_SECURE = False     # 因为使用的是HTTP
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+]
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
 ]

@@ -1,7 +1,6 @@
 from django.http import JsonResponse
 import json
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
-from django.views.decorators.csrf import csrf_exempt
 from common.result.result import Result
 from user.models import User
 from address.models import Address
@@ -16,7 +15,6 @@ from comment.models import Comment
 
 @require_POST
 @token_required
-@csrf_exempt
 def create_order_view(request):
     try:
         data = json.loads(request.body)
@@ -107,7 +105,6 @@ def get_order_view(request):
         return JsonResponse(result.to_dict(), status=400)
         
 # 修改一整个订单
-@csrf_exempt
 @require_http_methods('PUT')
 @token_required
 def update_order_view(request):
@@ -153,7 +150,6 @@ def update_order_view(request):
         result = Result.error(str(e))
         return JsonResponse(result.to_dict(), status=400)
 
-@csrf_exempt
 @require_http_methods(['PUT'])
 @token_required
 def update_order_item_view(request):

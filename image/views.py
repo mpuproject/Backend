@@ -5,11 +5,9 @@ from django.utils import timezone
 import os
 import uuid
 from common.result.result import Result
-from django.views.decorators.csrf import csrf_exempt
 from common.utils.decorators import token_required
 
-# @token_required
-@csrf_exempt
+@token_required
 @require_POST
 def upload_image(request):
     try:

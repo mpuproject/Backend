@@ -4,8 +4,7 @@ from common.result.result import Result
 from .models import Product
 from django.db.models import Q, F, Case, When, Value, IntegerField
 from rest_framework.views import APIView
-from category.models import SubCategory, Category
-from django.views.decorators.csrf import csrf_exempt
+from category.models import SubCategory
 import uuid
 import json
 from django.utils import timezone
@@ -134,7 +133,6 @@ class SearchView(APIView):
 @require_POST
 @token_required
 @admin_required
-@csrf_exempt
 def add_product_view(request):
     try:
         # 解析请求体中的JSON数据
@@ -175,7 +173,6 @@ def add_product_view(request):
 @require_http_methods(['PUT'])
 @token_required
 @admin_required
-@csrf_exempt
 def update_product_view(request, id):
     try:
         # 解析请求体中的JSON数据
@@ -225,7 +222,6 @@ def update_product_view(request, id):
 @require_http_methods(["PATCH"])
 @token_required
 @admin_required
-@csrf_exempt
 def delete_product_view(request, id):
     try:
         # 获取产品对象

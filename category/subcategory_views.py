@@ -5,7 +5,6 @@ from common.result.result import Result
 import json
 from product.models import Product
 from django.core.paginator import Paginator
-from django.views.decorators.csrf import csrf_exempt
 from common.utils.decorators import admin_required, token_required
 
 # 获取二级分类导航
@@ -30,7 +29,6 @@ def get_subcategory_filter_view(request, id):
         result = Result.error("Sub-category not found")
         return JsonResponse(result.to_dict(), status=404)
     
-@csrf_exempt
 @require_POST
 def get_subcategory_products_view(request):
     try:

@@ -1,13 +1,11 @@
 from django.http import JsonResponse
 import json
 from django.views.decorators.http import require_POST, require_GET
-from django.views.decorators.csrf import csrf_exempt
 from common.result.result import Result
 from user.models import User
 from .models import Cart
 from product.models import Product
 
-@csrf_exempt
 @require_POST
 def save_cart_view(request):
     try:
@@ -72,7 +70,6 @@ def get_cart_view(request):
         result = Result.error("Product not found")
         return JsonResponse(result.to_dict(), status=404)
     
-@csrf_exempt
 @require_POST
 def add_cart_view(request):
     data = json.loads(request.body)

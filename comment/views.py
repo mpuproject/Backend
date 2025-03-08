@@ -2,7 +2,6 @@ from django.http import JsonResponse
 import json
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 from common.result.result import Result
-from django.views.decorators.csrf import csrf_exempt
 from common.utils.decorators import token_required
 from product.models import Product
 from .models import Comment
@@ -58,7 +57,6 @@ def get_product_comment_view(request):
 
 @require_POST
 @token_required
-@csrf_exempt
 def add_comment_view(request):
     try:
         data = json.loads(request.body)
@@ -144,7 +142,6 @@ def get_comment_view(request):
     
 @require_http_methods('DELETE')
 @token_required
-@csrf_exempt
 def delete_comment_view(request):
     try:
         data = json.loads(request.body)
@@ -180,7 +177,6 @@ def delete_comment_view(request):
 
 @require_http_methods('PUT')
 @token_required
-@csrf_exempt
 def update_comment_view(request):
     try:
         data = json.loads(request.body)

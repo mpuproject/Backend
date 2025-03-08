@@ -5,7 +5,6 @@ from common.result.result import Result
 import json
 from product.models import Product
 import uuid
-from django.views.decorators.csrf import csrf_exempt
 from common.utils.decorators import token_required, admin_required
 
 # 获取所有分类目录
@@ -26,7 +25,6 @@ def get_category_nav_view(request):
     result = Result.success_with_data(category_list)
     return JsonResponse(result.to_dict())
 
-@csrf_exempt
 @require_POST
 def get_category_view(request):
     try:
@@ -82,10 +80,9 @@ def get_category_view(request):
         result = Result.error("Category not found")
         return JsonResponse(result.to_dict(), status=404)
     
-    
-    
-@csrf_exempt
 @require_POST
+@token_required
+@admin_required
 def add_category_view(request):
     try:
         # 解析请求体中的 JSON 数据
@@ -136,14 +133,3 @@ def get_all_categories_view(request):
 
     result = Result.success_with_data(category_list)
     return JsonResponse(result.to_dict())
-
-# @require_POST
-# def update_categories_status(request):
-#     body = json.loads(request.body)
-#     id = body.get("id")
-#     category = Category.objects.get(category_id = id)
-
-#     # 若状态为禁用
-#     if(category.status == "1"):
-#         active_cate_count = Category.objects.filter(status='1').count()
-#         if(active_cate_count)

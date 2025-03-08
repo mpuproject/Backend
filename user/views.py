@@ -1,6 +1,5 @@
 from django.http import JsonResponse
 from django.contrib.auth import authenticate
-from django.views.decorators.csrf import csrf_exempt
 import json
 from common.result.result import Result
 from .models import User
@@ -12,7 +11,6 @@ from ecommerce import settings
 import requests
 
 @require_POST
-@csrf_exempt  # 禁用 CSRF 验证（仅用于测试，生产环境需要启用）
 def login_view(request):
     try:
         data = json.loads(request.body)
@@ -38,7 +36,6 @@ def login_view(request):
                 "profile": str(user.profile_picture),
                 "access": access_token,
                 "refresh": refresh_token,
-                "is_staff": user.is_staff,
             })
             return JsonResponse(result.to_dict())
         else:
@@ -49,7 +46,6 @@ def login_view(request):
         return JsonResponse(result.to_dict(), status=400)
     
 @require_POST
-@csrf_exempt
 def signup_view(request):
     try:
         data = json.loads(request.body)
