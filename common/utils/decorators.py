@@ -13,7 +13,6 @@ def token_required(view_func):
         try:
             # 验证 JWT Token
             auth_result = authenticator.authenticate(request)
-            print(auth_result)
             if auth_result is not None:
                 user, token = auth_result  # 解包用户和 token
                 # 检查 token 是否在有效期内
