@@ -32,6 +32,7 @@ def get_details_view(request, pk):  # 使用 pk 作为参数名
         'price': str(product.price),
         'description': product.product_desc,
         'rating': product.product_rating,
+        'rating_num': product.rating_num,
         'stock_quantity': product.stock_quantity,
         'low_stock_threshold': product.low_stock_threshold,
         'images': product.images,

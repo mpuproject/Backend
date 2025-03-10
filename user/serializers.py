@@ -7,8 +7,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-        token['iat'] = datetime.now()   #签发时间
-        token['exp'] = datetime.now() + timedelta(minutes=15)  #过期时间
+        now = datetime.now()
+        token['iat'] = int(now.timestamp())  # 转换为 Unix 时间戳
+        token['exp'] = int((now + timedelta(minutes=15)).timestamp())  # 转换为 Unix 时间戳
         token['email'] = user.email
         token['is_staff'] = user.is_staff
         return token
@@ -17,9 +18,9 @@ class CustomTokenRefreshSerializer(TokenRefreshSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
         refresh = self.token_class(attrs['refresh'])
+        now = datetime.now()
 
         # 验证 token 是否在有效期内
-        now = datetime.now()
         iat = refresh.payload.get('iat')
         exp = refresh.payload.get('exp')
 
@@ -49,9 +50,9 @@ class CustomTokenRefreshSerializer(TokenRefreshSerializer):
         if is_staff is not None:
             access['is_staff'] = is_staff
 
-        # 更新 access token 的 iat 和 exp
-        access['iat'] = now
-        access['exp'] = now + timedelta(minutes=15)
+        # 更新 access token 的 iat 和 exp（使用时间戳）
+        access['iat'] = int(now.timestamp())
+        access['exp'] = int((now + timedelta(minutes=15)).timestamp())
 
         data['access'] = str(access)
         return data
