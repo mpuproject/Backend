@@ -19,6 +19,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf.urls.static import static
 from django.conf import settings
+from ecommerce import csrf_view
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -31,6 +32,7 @@ urlpatterns = [
     path('address/', include('address.urls')),
     path('order/', include('order.urls')),
     path('comment/', include('comment.urls')),
+    path('get_csrf/', csrf_view.get_csrf_token)
 ]
 
 if settings.DEBUG:

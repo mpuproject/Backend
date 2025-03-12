@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-x8x^nbv7yy7047lr!!a4stgoyu7ch2myp7^k5&n83r1k7echno
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', 'push.services.mozilla.com']
+ALLOWED_HOSTS = ['localhost']
 
 
 # Application definition
@@ -104,12 +104,16 @@ import os
 MEDIA_URL = '/media/'   # http://localhost:8080/media/
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-CSRF_COOKIE_SAMESITE = 'None'  # 允许跨站请求
+CSRF_COOKIE_SAMESITE = 'Lax'  # 允许跨站请求
 CSRF_COOKIE_SECURE = False     # 因为使用的是HTTP
+CSRF_USE_SESSIONS = False
+CSRF_COOKIE_HTTPONLY = False
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
 ]
+
+CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",

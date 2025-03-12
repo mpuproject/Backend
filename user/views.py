@@ -10,6 +10,7 @@ from django.views.decorators.http import require_POST
 from ecommerce import settings
 import requests
 from common.utils.decorators import token_required
+
 @require_POST
 def login_view(request):
     try:
@@ -117,38 +118,6 @@ def signup_view(request):
     except Exception as e:
         result = Result.error(str(e))
         return JsonResponse(result.to_dict(), status=500)
-
-
-def verify_recaptcha_view(token, action):
-    try:    
-        if not token:
-            result = Result.error('Token is required')
-            return JsonResponse(result.to_dict(), status=400)
-        
-        # 向 Google 发送验证请求
-        verification_data = {
-            'secret': settings.RECAPTCHA_SECRET_KEY,
-            'response': token
-        }
-        response = requests.post(
-            'https://www.google.com/recaptcha/api/siteverify',
-            data=verification_data
-        )
-        res = response.json()
-            
-        success = res.get('success')
-        score = res.get('score', 0)
-        verifyAction = res.get('action', '')
-        
-        if not success or not score < 0.5 or verifyAction != action:
-            error_msg = res.get('error-codes', ['reCAPTCHA verification failed'])
-            result = Result.error(error_msg)
-            return JsonResponse(result.to_dict(), status=400)
-        
-            
-    except Exception as e:
-        result = Result.error(str(e))
-        return JsonResponse(result.to_dict(), status=500)
     
 @token_required
 def update_user_profile(request, id):
@@ -193,6 +162,37 @@ def update_user_profile(request, id):
         return JsonResponse(Result.error("User not found").to_dict(), status=404)
     except Exception as e:
         return JsonResponse(Result.error(str(e)).to_dict(), status=500)
+
+def verify_recaptcha_view(token, action):
+    try:    
+        if not token:
+            result = Result.error('Token is required')
+            return JsonResponse(result.to_dict(), status=400)
+        
+        # 向 Google 发送验证请求
+        verification_data = {
+            'secret': settings.RECAPTCHA_SECRET_KEY,
+            'response': token
+        }
+        response = requests.post(
+            'https://www.google.com/recaptcha/api/siteverify',
+            data=verification_data
+        )
+        res = response.json()
+            
+        success = res.get('success')
+        score = res.get('score', 0)
+        verifyAction = res.get('action', '')
+        
+        if not success or not score < 0.5 or verifyAction != action:
+            error_msg = res.get('error-codes', ['reCAPTCHA verification failed'])
+            result = Result.error(error_msg)
+            return JsonResponse(result.to_dict(), status=400)
+        
+            
+    except Exception as e:
+        result = Result.error(str(e))
+        return JsonResponse(result.to_dict(), status=500)
     
 def check_password_strength(password):
 
