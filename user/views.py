@@ -51,7 +51,7 @@ def signup_view(request):
         data = json.loads(request.body)
         
         # 检查验证码
-        recaptcha_token = data.get('recaptchToken', '')
+        recaptcha_token = data.get('recaptchaToken', '')
         verify_recaptcha_view(recaptcha_token, 'register')
 
         username = data.get('username')
@@ -68,6 +68,14 @@ def signup_view(request):
 
         if password != confirm_password:
             result = Result.error('The two passwords do not match')
+            return JsonResponse(result.to_dict(), status=400)
+
+        if len(password) < 6 or len(password) > 20:
+            result = Result.error('Password must be 6-20 characters')
+            return JsonResponse(result.to_dict(), status=400)
+        
+        if not check_password_strength(password):
+            result = Result.error('Password is too weak')
             return JsonResponse(result.to_dict(), status=400)
 
         if User.objects.filter(username=username).exists():
@@ -142,7 +150,6 @@ def verify_recaptcha_view(token, action):
         result = Result.error(str(e))
         return JsonResponse(result.to_dict(), status=500)
     
-@csrf_exempt
 @token_required
 def update_user_profile(request, id):
     try:
@@ -186,3 +193,16 @@ def update_user_profile(request, id):
         return JsonResponse(Result.error("User not found").to_dict(), status=404)
     except Exception as e:
         return JsonResponse(Result.error(str(e)).to_dict(), status=500)
+    
+def check_password_strength(password):
+
+    conditions = [
+        any(c.isupper() for c in password),  # 包含大写字母
+        any(c.islower() for c in password),  # 包含小写字母
+        any(c.isdigit() for c in password),  # 包含数字
+        any(not c.isalnum() for c in password),  # 包含特殊字符
+        len(password) >= 8
+    ]
+    
+    # 满足任意4个条件
+    return sum(conditions) >= 4

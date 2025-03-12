@@ -54,6 +54,8 @@ def get_details_view(request, pk):  # 使用 pk 作为参数名
 
 # 查询相关产品
 class SearchView(APIView):
+    http_method_names = ['get']
+
     def get(self, request):
         query = request.query_params.get('q', '')  # 搜索关键词
         category_id = request.query_params.get('category', None)  # 一级分类 ID
@@ -63,11 +65,30 @@ class SearchView(APIView):
         min_price = request.query_params.get('sortMin')  # 最小价格
         max_price = request.query_params.get('sortMax')  # 最大价格
 
+        # 验证页码和每页大小
         try:
             page = int(page)
             page_size = int(page_size)
         except ValueError:
             result = Result.error('Invalid page or pageSize parameter')
+            return JsonResponse(result.to_dict(), status=400)
+        
+        # 验证category_id是否为有效的UUID
+        if category_id:
+            try:
+                uuid.UUID(category_id)
+            except ValueError:
+                result = Result.error('Invalid category ID')
+                return JsonResponse(result.to_dict(), status=400)
+            
+        # 验证价格范围
+        try:
+            if min_price is not None:
+                min_price = float(min_price)
+            if max_price is not None:
+                max_price = float(max_price)
+        except ValueError:
+            result = Result.error('Invalid price range')
             return JsonResponse(result.to_dict(), status=400)
 
         # 初始化产品查询集
