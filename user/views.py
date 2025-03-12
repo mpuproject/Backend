@@ -9,7 +9,7 @@ from .serializers import CustomTokenObtainPairSerializer
 from django.views.decorators.http import require_POST
 from ecommerce import settings
 import requests
-
+from common.utils.decorators import token_required
 @require_POST
 def login_view(request):
     try:
@@ -141,3 +141,48 @@ def verify_recaptcha_view(token, action):
     except Exception as e:
         result = Result.error(str(e))
         return JsonResponse(result.to_dict(), status=500)
+    
+@csrf_exempt
+@token_required
+def update_user_profile(request, id):
+    try:
+        # 验证用户身份
+        user = User.objects.get(id=id)
+        if not request.user.is_authenticated or request.user.id != user.id:
+            return JsonResponse(Result.error("Unauthorized").to_dict(), status=403)
+
+        data = json.loads(request.body)
+        
+        # 更新允许修改的字段
+        updatable_fields = ['username', 'email', 'phone', 'profile_picture']
+        updated = False
+        
+        for field in updatable_fields:
+            if field in data:
+                setattr(user, field, data[field])
+                updated = True
+                
+        if updated:
+            user.save()
+            # 刷新token
+            serializer = CustomTokenObtainPairSerializer()
+            token = serializer.get_token(user)
+            access_token = str(token.access_token)
+            refresh_token = str(token)
+
+            return JsonResponse(Result.success_with_data({
+                "id": str(user.id),
+                "username": user.username,
+                "email": user.email,
+                "phone": user.phone,
+                "access": access_token,
+                "refresh": refresh_token,
+                "profile": str(user.profile_picture)
+            }).to_dict())
+        else:
+            return JsonResponse(Result.error("No valid fields to update").to_dict(), status=400)
+
+    except User.DoesNotExist:
+        return JsonResponse(Result.error("User not found").to_dict(), status=404)
+    except Exception as e:
+        return JsonResponse(Result.error(str(e)).to_dict(), status=500)

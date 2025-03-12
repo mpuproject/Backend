@@ -14,4 +14,5 @@ urlpatterns = [
     path('register/', views.signup_view, name='signup'),
     path('token-refresh/', CustomTokenRefreshView.as_view(), name='tokenRefresh'),
     path('token/', CustomTokenObtainPairView.as_view(), name='customToken'),
+    path('<uuid:id>/', views.update_user_profile, name='updateUser'),
 ]
