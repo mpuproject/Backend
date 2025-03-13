@@ -125,7 +125,6 @@ def signup_view(request):
     except Exception as e:
         result = Result.error(str(e))
         return JsonResponse(result.to_dict(), status=500)
-    
 @token_required
 def update_user_profile(request, id):
     try:
@@ -160,7 +159,7 @@ def update_user_profile(request, id):
                 "phone": user.phone,
                 "access": access_token,
                 "refresh": refresh_token,
-                "profile": str(user.profile_picture)
+                "profile": user.profile_picture
             }).to_dict())
         else:
             return JsonResponse(Result.error("No valid fields to update").to_dict(), status=400)
