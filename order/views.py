@@ -1,17 +1,19 @@
+
 from django.http import JsonResponse
 import json
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 from common.result.result import Result
 from user.models import User
 from address.models import Address
-from common.utils.decorators import token_required
+from common.utils.decorators import token_required, admin_required
 from .models import Order, OrderItem
 from django.shortcuts import get_object_or_404
 from product.models import Product
 from django.core.paginator import Paginator, EmptyPage
-from django.db.models import Q
+from django.db.models import Q, Max
 from django.utils import timezone
 from comment.models import Comment
+from django.db.models import Max
 
 @require_POST
 @token_required
@@ -341,3 +343,109 @@ def get_order_item_view(request):
         result = Result.error(f'Server error: {str(e)}')
         return JsonResponse(result.to_dict(), status=500)
         
+@require_GET
+@token_required
+@admin_required
+def get_all_orders_view(request):
+    try:
+        page = int(request.GET.get('page', 1))
+        page_size = int(request.GET.get('page_size', 10))
+
+        # 通过 OrderItem 的 created_time 进行排序
+        orders = Order.objects.annotate(
+            latest_item_time=Max('orderitem__created_time')
+        ).order_by('-latest_item_time')
+        
+        # Apply pagination
+        paginator = Paginator(orders, page_size)
+        try:
+            page_obj = paginator.page(page)
+        except EmptyPage:
+            return JsonResponse({'code': 400, 'message': 'Invalid page number'}, status=400)
+
+        # Build response data
+        orders_data = []
+        for order in page_obj:
+            # Get items for current order
+            items = OrderItem.objects.filter(order=order)
+            
+            # Calculate total amount
+            total_amount = sum(item.product['price'] * item.product['count'] for item in items)
+            
+            orders_data.append({
+                'id': str(order.order_id),
+                'createdTime': order.orderitem_set.first().created_time.isoformat(),
+                'orderStatus': order.order_status,
+                'totalPrice': total_amount,
+                'userId': str(order.user.id),
+                'addressId': str(order.address.address_id),
+                'items': [{
+                    'id': item.item_id,
+                    'itemStatus': item.item_status,
+                    'product': item.product,
+                    'createdTime': item.created_time.isoformat(),
+                    'updatedTime': item.updated_time.isoformat()
+                } for item in items]
+            })
+
+        result = Result.success_with_data({
+            'count': paginator.count,
+            'results': orders_data,
+            'page': page,
+            'pageSize': page_size
+        })
+        return JsonResponse(result.to_dict(), status=200)
+
+    except Exception as e:
+        result = Result.error(f'Server error: {str(e)}')
+        return JsonResponse(result.to_dict(), status=500)
+
+@require_http_methods('PUT')
+@token_required
+@admin_required
+def update_admin_item_status_view(request):
+    try:
+        data = json.loads(request.body)
+        item_id = data.get('itemId', '')
+        old_status = data.get('oldStatus', '')
+        new_status = data.get('newStatus', '')
+
+        if not item_id or not old_status or not new_status:
+            result = Result.error('Missing required parameters: itemId, oldStatus or newStatus')
+            return JsonResponse(result.to_dict(), status=400)
+        
+        item = get_object_or_404(OrderItem, item_id=item_id)
+        
+        if old_status not in ['1', '6', '9']:
+            result = Result.error('Error: Item status cannot be changed')
+            return JsonResponse(result.to_dict(), status=400)
+
+        if old_status != item.item_status:
+            result = Result.error('Item status doesn\'t match')
+            return JsonResponse(result.to_dict(), status=400)
+        
+        if old_status == '1' and new_status not in ['2', '9']:
+            result = Result.error('Failed to change item status')
+            return JsonResponse(result.to_dict(), status=400)
+        
+        if old_status == '9' and new_status != '2':
+            result = Result.error('Failed to change item status')
+            return JsonResponse(result.to_dict(), status=400)
+        
+        if old_status == '6' and new_status != '7':
+            result = Result.error('Failed to change item status')
+            return JsonResponse(result.to_dict(), status=400)
+        
+        item.item_status = new_status
+        item.save()
+
+        result = Result.success()
+        return JsonResponse(result, status=200)
+
+    except OrderItem.DoesNotExist:
+        result = Result.error(f'Order item {item_id} not found')
+        return JsonResponse(result, status=404)
+    
+    except Exception as e:
+        result = Result.error(e)
+        return JsonResponse(result, status=500)
