@@ -8,3 +8,4 @@ def get_csrf_token(request):
     csrf_token = get_token(request)
     result = Result.success_with_data({'csrftoken': csrf_token})
     return JsonResponse(result.to_dict())
+

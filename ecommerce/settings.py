@@ -73,7 +73,7 @@ from datetime import timedelta
 # JWT 配置
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),  # Access Token 有效期
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),     # Refresh Token 有效期
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),     # Refresh Token 有效期
     'ROTATE_REFRESH_TOKENS': False,                  # 是否在刷新时生成新的 Refresh Token
     'BLACKLIST_AFTER_ROTATION': True,                # 是否将旧的 Refresh Token 加入黑名单
     'UPDATE_LAST_LOGIN': False,                      # 是否更新用户的 last_login 字段

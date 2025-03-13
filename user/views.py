@@ -10,6 +10,7 @@ from django.views.decorators.http import require_POST
 from ecommerce import settings
 import requests
 from common.utils.decorators import token_required
+from django.middleware.csrf import get_token
 
 @require_POST
 def login_view(request):
@@ -17,7 +18,7 @@ def login_view(request):
         data = json.loads(request.body)
         
         #检查验证码
-        recaptcha_token = data.get('recapchaToken', '')
+        recaptcha_token = data.get('recaptchaToken', '')
         verify_recaptcha_view(recaptcha_token, 'login')
 
         username = data.get('username')
@@ -31,6 +32,10 @@ def login_view(request):
         
             access_token = str(token.access_token)
             refresh_token = str(token)
+
+            # 刷新 csrf_token
+            csrf_token = get_token(request)
+
             result = Result.success_with_data({
                 "id": user.id,
                 "username": user.username,
@@ -38,7 +43,9 @@ def login_view(request):
                 "access": access_token,
                 "refresh": refresh_token,
             })
-            return JsonResponse(result.to_dict())
+            response = JsonResponse(result.to_dict())
+            response.set_cookie('csrftoken', csrf_token, path='/')
+            return response
         else:
             result = Result.error("Incorrect username or password")
             return JsonResponse(result.to_dict(), status=400)

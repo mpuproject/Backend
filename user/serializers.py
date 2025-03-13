@@ -1,43 +1,24 @@
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import AccessToken
-from datetime import datetime, timedelta
-from rest_framework import serializers
+from datetime import datetime, timedelta, timezone
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-        now = datetime.now()
-        token['iat'] = int(now.timestamp())  # 转换为 Unix 时间戳
-        token['exp'] = int((now + timedelta(minutes=15)).timestamp())  # 转换为 Unix 时间戳
         token['email'] = user.email
         token['is_staff'] = user.is_staff
+        
+        # 如果用户是staff，设置token有效期为1天
+        if user.is_staff:
+            token.set_exp(from_time=datetime.now(timezone.utc), lifetime=timedelta(days=1))
+        
         return token
 
 class CustomTokenRefreshSerializer(TokenRefreshSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
         refresh = self.token_class(attrs['refresh'])
-        now = datetime.now()
-
-        # 验证 token 是否在有效期内
-        iat = refresh.payload.get('iat')
-        exp = refresh.payload.get('exp')
-
-        if iat is None or exp is None:
-            raise serializers.ValidationError('Token is missing iat or exp field')
-
-        # 将 iat 和 exp 转换为 datetime 对象
-        iat_time = datetime.fromtimestamp(iat)
-        exp_time = datetime.fromtimestamp(exp)
-
-        # 检查 token 是否已过期
-        if now > exp_time:
-            raise serializers.ValidationError('Token has expired')
-
-        # 检查 token 是否已生效
-        if now < iat_time:
-            raise serializers.ValidationError('Token is not yet valid')
 
         # 从 refresh token 中获取自定义字段
         email = refresh.payload.get('email')
@@ -49,10 +30,6 @@ class CustomTokenRefreshSerializer(TokenRefreshSerializer):
             access['email'] = email
         if is_staff is not None:
             access['is_staff'] = is_staff
-
-        # 更新 access token 的 iat 和 exp（使用时间戳）
-        access['iat'] = int(now.timestamp())
-        access['exp'] = int((now + timedelta(minutes=15)).timestamp())
 
         data['access'] = str(access)
         return data

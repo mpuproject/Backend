@@ -8,6 +8,7 @@ from .models import Comment
 from order.models import OrderItem
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.db.models import Q
 
 # 获取商品评论详情
 @require_GET
@@ -16,9 +17,21 @@ def get_product_comment_view(request):
         product_id = request.GET.get('productId')
         current_page = int(request.GET.get('currentPage', 1))
         page_size = int(request.GET.get('pageSize', 20))
+        rating = request.GET.get('rating')
+        has_image = request.GET.get('hasImage')
 
         # 获取商品评论，按更新时间倒序排列
         comments = Comment.objects.filter(product_id=product_id).order_by('-updated_time')
+
+        if rating == '5':
+            comments = comments.filter(rating__gte=4)
+        if rating == '3':
+            comments = comments.filter(rating=3)
+        if rating == '1':
+            comments = comments.filter(rating__lte=2)
+        
+        if has_image == 'true':
+            comments = comments.filter(~Q(images=[]))
         
         # 分页处理
         start = (current_page - 1) * page_size
