@@ -1,4 +1,3 @@
-
 from django.http import JsonResponse
 import json
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
@@ -342,7 +341,7 @@ def get_order_item_view(request):
     except Exception as e:
         result = Result.error(f'Server error: {str(e)}')
         return JsonResponse(result.to_dict(), status=500)
-       
+        
 @require_GET
 @token_required
 @admin_required
@@ -350,11 +349,17 @@ def get_all_orders_view(request):
     try:
         page = int(request.GET.get('page', 1))
         page_size = int(request.GET.get('page_size', 10))
+        query = request.GET.get('q', '')
 
         # 通过 OrderItem 的 created_time 进行排序
         orders = Order.objects.annotate(
             latest_item_time=Max('orderitem__created_time')
         ).order_by('-latest_item_time')
+
+        if query:
+            orders = orders.filter(
+                Q(order_id__icontains=query)
+            )
         
         # Apply pagination
         paginator = Paginator(orders, page_size)
@@ -416,7 +421,7 @@ def update_admin_item_status_view(request):
         
         item = get_object_or_404(OrderItem, item_id=item_id)
         
-        if old_status not in ['1', '6', '9']:
+        if old_status not in ['1', '3', '6', '9']:
             result = Result.error('Error: Item status cannot be changed')
             return JsonResponse(result.to_dict(), status=400)
 
@@ -424,11 +429,7 @@ def update_admin_item_status_view(request):
             result = Result.error('Item status doesn\'t match')
             return JsonResponse(result.to_dict(), status=400)
         
-        if old_status == '1' and new_status not in ['2', '9']:
-            result = Result.error('Failed to change item status')
-            return JsonResponse(result.to_dict(), status=400)
-        
-        if old_status == '9' and new_status != '2':
+        if (old_status == '1' and new_status not in ['2', '9']) or (old_status == '9' and new_status != '3') or (old_status == '3' and new_status != '4'):
             result = Result.error('Failed to change item status')
             return JsonResponse(result.to_dict(), status=400)
         
@@ -440,12 +441,49 @@ def update_admin_item_status_view(request):
         item.save()
 
         result = Result.success()
-        return JsonResponse(result, status=200)
+        return JsonResponse(result.to_dict(), status=200)
 
     except OrderItem.DoesNotExist:
         result = Result.error(f'Order item {item_id} not found')
-        return JsonResponse(result, status=404)
+        return JsonResponse(result.to_dict(), status=404)
     
     except Exception as e:
-        result = Result.error(e)
-        return JsonResponse(result, status=500)
+        result = Result.error(str(e))
+        return JsonResponse(result.to_dict(), status=500)
+
+@require_GET
+@token_required
+@admin_required
+def get_order_detail_view(request):
+    try:
+        order_id = request.GET.get('id')
+        if not order_id:
+            return JsonResponse({'code': 400, 'message': 'Missing order ID parameter'}, status=400)
+
+        # 获取订单
+        order = get_object_or_404(Order, order_id=order_id)
+        order_items = OrderItem.objects.filter(order=order)
+
+        # 将订单对象转换为字典
+        order_data = {
+            'id': order.order_id,
+            'delivery_time': order.delivery_time,
+            'user_id': order.user.id,
+            'address_id': order.address.address_id,
+            'order_status': order.order_status,
+            'items': [{
+                'id': item.item_id,
+                'product': item.product,
+                'item_status': item.item_status,
+                'quantity': item.product['count'],
+                'price': item.product['price'],
+                'created_time': item.created_time.isoformat(),
+                'updated_time': item.updated_time.isoformat(),
+            } for item in order_items]
+        }
+
+        result = Result.success_with_data(order_data)
+        return JsonResponse(result.to_dict(), status=200)
+
+    except Exception as e:
+        return JsonResponse({'code': 500, 'message': f'Server error: {str(e)}'}, status=500)
