@@ -342,7 +342,7 @@ def get_order_item_view(request):
     except Exception as e:
         result = Result.error(f'Server error: {str(e)}')
         return JsonResponse(result.to_dict(), status=500)
-        
+       
 @require_GET
 @token_required
 @admin_required
