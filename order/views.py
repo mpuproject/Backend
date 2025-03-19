@@ -352,7 +352,7 @@ def get_all_orders_view(request):
         query = request.GET.get('q', '')
 
         # 通过 OrderItem 的 created_time 进行排序
-        orders = Order.objects.annotate(
+        orders = Order.objects.exclude(order_status='0').annotate(
             latest_item_time=Max('orderitem__created_time')
         ).order_by('-latest_item_time')
 
@@ -429,7 +429,7 @@ def update_admin_item_status_view(request):
             result = Result.error('Item status doesn\'t match')
             return JsonResponse(result.to_dict(), status=400)
         
-        if (old_status == '1' and new_status not in ['2', '9']) or (old_status == '9' and new_status != '3') or (old_status == '3' and new_status != '4'):
+        if (old_status == '1' and new_status not in ['7', '9']) or (old_status == '9' and new_status != '3') or (old_status == '3' and new_status != '4'):
             result = Result.error('Failed to change item status')
             return JsonResponse(result.to_dict(), status=400)
         
@@ -460,16 +460,29 @@ def get_order_detail_view(request):
         if not order_id:
             return JsonResponse({'code': 400, 'message': 'Missing order ID parameter'}, status=400)
 
-        # 获取订单
+        # 获取订单并预加载地址信息
         order = get_object_or_404(Order, order_id=order_id)
         order_items = OrderItem.objects.filter(order=order)
+
+        # 获取地址信息
+        address = order.address
+        address_data = {
+            'address_id': address.address_id,
+            'recipient': address.recipient_name,
+            'phone': address.phone,
+            'province': address.province,
+            'city': address.city,
+            'district': address.district,
+            'additional_address': address.additional_address,
+            'postal_code': address.postal_code
+        }
 
         # 将订单对象转换为字典
         order_data = {
             'id': order.order_id,
             'delivery_time': order.delivery_time,
             'user_id': order.user.id,
-            'address_id': order.address.address_id,
+            'address': address_data,
             'order_status': order.order_status,
             'items': [{
                 'id': item.item_id,

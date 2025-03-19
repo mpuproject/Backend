@@ -9,6 +9,8 @@ import uuid
 import json
 from django.utils import timezone
 from common.utils.decorators import admin_required, token_required
+from django.utils.html import escape
+from django.utils.html import strip_tags
 
 @require_GET
 def get_details_view(request, pk):  # 使用 pk 作为参数名
@@ -57,7 +59,7 @@ class SearchView(APIView):
     http_method_names = ['get']
 
     def get(self, request):
-        query = request.query_params.get('q', '')  # 搜索关键词
+        query = strip_tags(escape(request.query_params.get('q', '')))  # 搜索关键词
         category_id = request.query_params.get('category', None)  # 一级分类 ID
         page = request.query_params.get('page', 1)  # 当前页码
         page_size = request.query_params.get('pageSize', 10)  # 每页大小
@@ -160,29 +162,26 @@ def add_product_view(request):
         # 解析请求体中的JSON数据
         data = json.loads(request.body)
         
-        # 自动生成产品ID
-        product_id = str(uuid.uuid4())
-        
-        # 创建产品对象
+        # 对输入数据进行转义
         product = Product(
-            product_id=product_id,
-            product_name=data['name'],
+            product_id=str(uuid.uuid4()),
+            product_name=escape(data['name']),
             price=data['price'],
-            product_desc=data['description'],
+            product_desc=escape(data['description']),
             stock_quantity=data['stockQuantity'],
             low_stock_threshold=data['lowStockThreshold'],
             images=data['images'],
             status=data['status'],
             sub_category_id=data['subCategoryId'],
             product_rating=0,
-            product_details=data.get('details', []),  # 如果未提供details，默认为空数组
+            product_details=[escape(detail) for detail in data.get('details', [])],
             created_time=timezone.now()
         )
 
         # 保存产品
         product.save()
         
-        result = Result.success_with_data({'id': product_id})
+        result = Result.success_with_data({'id': product.product_id})
         return JsonResponse(result.to_dict(), status=201)
     
     except KeyError as e:
@@ -197,23 +196,16 @@ def add_product_view(request):
 @admin_required
 def update_product_view(request, id):
     try:
-        # 解析请求体中的JSON数据
         data = json.loads(request.body)
+        product = Product.objects.get(product_id=id)
         
-        # 获取产品对象
-        try:
-            product = Product.objects.get(product_id=id)
-        except Product.DoesNotExist:
-            result = Result.error('Product does not exist')
-            return JsonResponse(result.to_dict(), status=404)
-        
-        # 更新可修改的字段
+        # 对更新数据进行转义
         if 'name' in data:
-            product.product_name = data['name']
+            product.product_name = escape(data['name'])
         if 'price' in data:
             product.price = data['price']
         if 'description' in data:
-            product.product_desc = data['description']
+            product.product_desc = escape(data['description'])
         if 'stock_quantity' in data:
             product.stock_quantity += data['stock_quantity']
         if 'low_stock_threshold' in data:
@@ -225,7 +217,7 @@ def update_product_view(request, id):
             subCate = SubCategory.objects.get(sub_cate_id = sub_id)
             product.sub_category = subCate
         if 'details' in data:
-            product.product_details = data['details']
+            product.product_details = [escape(detail) for detail in data['details']]
         if 'status' in data:
             product.status = data['status']
         product.updated_time = timezone.now()

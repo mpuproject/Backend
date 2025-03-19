@@ -72,7 +72,7 @@ REST_FRAMEWORK = {
 from datetime import timedelta
 # JWT 配置
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),  # Access Token 有效期
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=1),  # Access Token 有效期
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),     # Refresh Token 有效期
     'ROTATE_REFRESH_TOKENS': False,                  # 是否在刷新时生成新的 Refresh Token
     'BLACKLIST_AFTER_ROTATION': True,                # 是否将旧的 Refresh Token 加入黑名单
@@ -112,6 +112,13 @@ CSRF_COOKIE_HTTPONLY = False
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
 ]
+
+# 启用XSS保护
+SECURE_BROWSER_XSS_FILTER = True
+# 防止MIME类型嗅探
+SECURE_CONTENT_TYPE_NOSNIFF = True
+# 禁用iframe嵌入
+X_FRAME_OPTIONS = 'DENY'
 
 CORS_ALLOW_CREDENTIALS = True
 

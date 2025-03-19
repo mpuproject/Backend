@@ -2,6 +2,7 @@ from django.db import models
 import uuid
 from django.db.models import JSONField
 from category.models import Category, SubCategory
+from django.utils.html import escape
 
 class Product(models.Model):
     # 商品状态选项
@@ -42,6 +43,11 @@ class Product(models.Model):
 
     def __str__(self):
         return self.product_name
+
+    def save(self, *args, **kwargs):
+        self.product_name = escape(self.product_name)
+        self.product_desc = escape(self.product_desc)
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = "商品"

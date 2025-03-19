@@ -9,6 +9,7 @@ from order.models import OrderItem
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.db.models import Q
+from django.utils.html import escape
 
 # 获取商品评论详情
 @require_GET
@@ -74,7 +75,7 @@ def add_comment_view(request):
     try:
         data = json.loads(request.body)
         item_id = data.get('orderItemId')
-        content = data.get('commentDesc', 'User didn\'t say anything.')
+        content = escape(data.get('commentDesc', 'User didn\'t say anything.'))
         rating = data.get('rating')
         images = data.get('images', [])
         product_id = data.get('productId')
