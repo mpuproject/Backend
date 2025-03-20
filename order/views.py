@@ -358,7 +358,7 @@ def get_all_orders_view(request):
 
         if query:
             orders = orders.filter(
-                Q(order_id__icontains=query)
+                Q(order_id__icontains=query) | Q(user__username__icontains=query)
             )
         
         # Apply pagination
@@ -383,6 +383,7 @@ def get_all_orders_view(request):
                 'orderStatus': order.order_status,
                 'totalPrice': total_amount,
                 'userId': str(order.user.id),
+                'username': order.user.username,
                 'addressId': str(order.address.address_id),
                 'items': [{
                     'id': item.item_id,
@@ -482,6 +483,7 @@ def get_order_detail_view(request):
             'id': order.order_id,
             'delivery_time': order.delivery_time,
             'user_id': order.user.id,
+            'username': order.user.username,
             'address': address_data,
             'order_status': order.order_status,
             'items': [{
