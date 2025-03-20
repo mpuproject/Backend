@@ -6,6 +6,7 @@ from common.result.result import Result
 from common.utils.decorators import token_required
 from order.models import Order, OrderItem
 from user.models import User
+from category.models import Category, SubCategory
 
 # 返回新上架商品
 @require_GET
@@ -60,7 +61,7 @@ def hot_view(request):
 
 @require_GET
 @token_required
-def getMessageCount(request):
+def get_message_count(request):
     try:
         user_id = request.GET.get('userId')
         
@@ -89,3 +90,43 @@ def getMessageCount(request):
         result = Result.error(str(e))
         return JsonResponse(result.to_dict())
         
+@require_GET
+def get_home_product_view(request):
+    try:
+        # 获取一个随机的启用状态的子类别
+        random_subcategories = SubCategory.objects.filter(status='1').order_by('?')[:2]
+        
+        if not random_subcategories:
+            result = Result.success_with_data([])
+            return JsonResponse(result.to_dict())
+
+        category_data = []
+
+        # 获取该子类别下的所有启用状态的商品
+        for random_subcategory in random_subcategories:
+            products = Product.objects.filter(sub_category=random_subcategory, status='1', is_deleted=False).order_by('?')[:8]
+
+            # 构造返回数据
+            category_data.append({
+                "id": random_subcategory.category.category_id,
+                "name": random_subcategory.category.category_name,
+                "saleInfo": random_subcategory.sub_category_name,
+                "picture": random_subcategory.image_url if random_subcategory.image_url else "https://picsum.photos/200/600",
+                "goods": [
+                    {
+                        "id": product.product_id,
+                        "name": product.product_name,
+                        "price": str(product.price),
+                        "images": product.images[0]
+                    }
+                    for product in products
+                ]
+            })
+
+        # 返回结果
+        result = Result.success_with_data(category_data)
+        return JsonResponse(result.to_dict())
+
+    except Exception as e:
+        result = Result.error(str(e))
+        return JsonResponse(result.to_dict())

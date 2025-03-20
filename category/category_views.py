@@ -70,6 +70,7 @@ def get_category_view(request):
         category_data = {
             "id": str(category.category_id),
             "name": str(category.category_name),
+            'images': category.category_images,
             "subcate": subcategory_list  # 包含商品列表的二级分类数据
         }
 

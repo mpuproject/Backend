@@ -102,7 +102,7 @@ def signup_view(request):
             first_name=first_name,
             last_name=last_name,
             password=password,
-            profile_picture=MEDIA_URL+'200.png',
+            profile_picture='http://localhost:8080'+MEDIA_URL+'200.png',
             is_staff=is_staff,
         )
 
