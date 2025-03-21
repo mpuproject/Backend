@@ -92,6 +92,9 @@ def get_order_view(request):
                 'price': item.product['price'],
                 'image': item.product['image'],
                 'count': item.product['count'],
+                'item_id':item.item_id,
+                'item_status': item.item_status,
+                'updated_time': item.updated_time,
             } for item in items],
             'orderStatus': order.order_status,
             'amount': total_amount,
@@ -162,13 +165,12 @@ def update_order_item_view(request):
         data = json.loads(request.body)
         item_id = data.get('item_id')
         item_status = data.get('item_status')
-        
+        print(item_id, item_status)
         if not item_id or not item_status:
             return JsonResponse({
                 'code': 400,
                 'message': 'Missing required parameters: item_id or item_status'
             }, status=400)
-
         # 精确查询订单项
         item = get_object_or_404(OrderItem, item_id=item_id)
         item.item_status = item_status
@@ -182,7 +184,6 @@ def update_order_item_view(request):
                 'updated_time': item.updated_time.isoformat()
             }
         }, status=200)
-
     except json.JSONDecodeError:
         return JsonResponse({'code': 400, 'message': 'Invalid JSON format'}, status=400)
     except OrderItem.DoesNotExist:
