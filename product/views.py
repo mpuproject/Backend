@@ -163,6 +163,9 @@ def add_product_view(request):
         data = json.loads(request.body)
         
         # 对输入数据进行转义
+        # 过滤掉 key 或 value 为空的字典
+        details = [detail for detail in data.get('details', []) if detail.get('key') and detail.get('value')]
+        
         product = Product(
             product_id=str(uuid.uuid4()),
             product_name=escape(data['name']),
@@ -174,7 +177,7 @@ def add_product_view(request):
             status=data['status'],
             sub_category_id=data['subCategoryId'],
             product_rating=0,
-            product_details=[escape(detail) for detail in data.get('details', [])],
+            product_details=details,
             created_time=timezone.now()
         )
 
@@ -217,7 +220,8 @@ def update_product_view(request, id):
             subCate = SubCategory.objects.get(sub_cate_id = sub_id)
             product.sub_category = subCate
         if 'details' in data:
-            product.product_details = [escape(detail) for detail in data['details']]
+            # 过滤掉 key 或 value 为空的字典
+            product.product_details = [detail for detail in data['details'] if detail.get('key') and detail.get('value')]
         if 'status' in data:
             product.status = data['status']
         product.updated_time = timezone.now()
