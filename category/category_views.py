@@ -116,6 +116,85 @@ def add_category_view(request):
         result = Result.error('Invalid JSON format in request body')
         return JsonResponse(result.to_dict(), status=400)
 
+@require_POST
+@token_required
+@admin_required
+def update_category_view(request):
+    try:
+        # 解析请求体中的 JSON 数据
+        body = json.loads(request.body)
+        category_id = body.get('id')  # 获取分类 ID
+        category_name = body.get('name')  # 获取新的分类名称
+        status = body.get('status')  # 获取新的状态
+        image_url = body.get('image') #获取图片URL
+
+        # 验证分类 ID 和名称是否为空
+        if not category_id or (not category_name and not status):
+            result = Result.error('Category ID and at least one of name or status are required')
+            return JsonResponse(result.to_dict(), status=400)
+
+        # 查找要更新的分类
+        try:
+            category = Category.objects.get(category_id=category_id)
+        except Category.DoesNotExist:
+            result = Result.error('Category not found')
+            return JsonResponse(result.to_dict(), status=404)
+
+        # 更新分类信息
+        if category_name:
+            category.category_name = category_name
+        if status:
+            category.status = status
+        if image_url:
+            category.image = image_url
+        category.save()
+
+        # 构造返回的数据
+        category_data = {
+            "id": str(category.category_id),
+            "name": category.category_name,
+            "status": category.status,
+            "image": category.status
+        }
+
+        result = Result.success_with_data(category_data)
+        return JsonResponse(result.to_dict())
+
+    except json.JSONDecodeError:
+        result = Result.error('Invalid JSON format in request body')
+        return JsonResponse(result.to_dict(), status=400)
+
+@require_POST
+@token_required
+@admin_required
+def delete_category_view(request):
+    try:
+        # 解析请求体中的 JSON 数据
+        body = json.loads(request.body)
+        category_id = body.get('id')  # 获取分类 ID
+
+        # 验证分类 ID 是否为空
+        if not category_id:
+            result = Result.error('Category ID is required')
+            return JsonResponse(result.to_dict(), status=400)
+
+        # 查找要删除的分类
+        try:
+            category = Category.objects.get(category_id=category_id)
+        except Category.DoesNotExist:
+            result = Result.error('Category not found')
+            return JsonResponse(result.to_dict(), status=404)
+
+        # 删除分类
+        category.delete()
+
+        result = Result.success('Category deleted successfully')
+        return JsonResponse(result.to_dict())
+
+    except json.JSONDecodeError:
+        result = Result.error('Invalid JSON format in request body')
+        return JsonResponse(result.to_dict(), status=400)
+    
 @token_required
 @admin_required
 @require_GET
@@ -127,7 +206,8 @@ def get_all_categories_view(request):
         {
             "id": str(category.category_id),  # UUID 转换为字符串
             "name": category.category_name,
-            "status": category.status
+            "status": category.status,
+            'images': category.category_images
         }
         for category in categories
     ]

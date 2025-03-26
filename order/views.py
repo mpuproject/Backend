@@ -207,7 +207,7 @@ def get_order_by_user_id_view(request):
             
         status = request.GET.get('itemStatus')
         page = int(request.GET.get('page', 1))
-        page_size = int(request.GET.get('page_size', 2))
+        page_size = int(request.GET.get('page_size', 5))
 
         # 修改验证列表为字符串格式
         valid_statuses = ['0','1','2','3','4','5','6','7','8','9','all','undefined']

@@ -9,4 +9,7 @@ urlpatterns = [
     path('sub/product/', subcategory_views.get_subcategory_products_view, name="getSubcategoryProducts"),
     path('sub/list/', subcategory_views.get_subcategory_view, name='getSubcategoryList'),
     path('list/', category_views.get_all_categories_view, name='getAllCategories'),
+    path('add/', category_views.add_category_view, name='addCategory'),
+    path('update/', category_views.update_category_view, name='updateCategory'),
+    path('delete/', category_views.delete_category_view, name='deleteCategory'),
 ]
