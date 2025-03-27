@@ -32,7 +32,7 @@ def upload_image(request):
             return JsonResponse(result.to_dict(), status=400)
         
         # 验证文件大小
-        if file.size > 5 * 1024 * 1024:  # 5MB
+        if file.size > 20 * 1024 * 1024:  # 5MB
             result = Result.error('File size must be less than 5MB')
             return JsonResponse(result.to_dict(), status=400)
         
