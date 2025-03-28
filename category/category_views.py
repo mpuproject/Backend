@@ -4,6 +4,7 @@ from .models import Category
 from common.result.result import Result
 import json
 from product.models import Product
+from django.db.models import Q
 import uuid
 from common.utils.decorators import token_required, admin_required
 import os
@@ -34,14 +35,8 @@ def get_category_view(request):
     try:
         id = json.loads(request.body).get("id")
 
-        try:
-            uuid.UUID(id)
-        except ValueError:
-            result = Result.error("Invalid category ID format")
-            return JsonResponse(result.to_dict(), status=400)
-
         # 获取分类信息
-        category = Category.objects.get(category_id=id)
+        category = Category.objects.get(Q(category_id=id) & Q(status='1'))
 
         # 获取该分类下的二级分类（最多 7 条）
         subcategories = category.subcategories.all()[:7]
@@ -208,6 +203,11 @@ def delete_category_view(request):
             result = Result.error('Category not found')
             return JsonResponse(result.to_dict(), status=404)
 
+        # 检查是否存在关联的子分类
+        if category.subcategories.exists():
+            result = Result.error('Cannot delete category with associated subcategories')
+            return JsonResponse(result.to_dict(), status=400)
+
         # 删除分类
         category.delete()
 
@@ -228,12 +228,41 @@ def get_all_categories_view(request):
     category_list = [
         {
             "id": str(category.category_id),  # UUID 转换为字符串
-            "name": category.category_name,
-            "status": category.status,
-            'imageURL': category.category_images
+            "name": category.category_name
         }
         for category in categories
     ]
 
     result = Result.success_with_data(category_list)
     return JsonResponse(result.to_dict())
+
+@token_required
+@admin_required
+@require_GET
+def get_admin_all_categories_view(request):
+    try:
+        page = int(request.GET.get('page', 1))  # 默认第一页
+        page_size = int(request.GET.get('pageSize', 10))  # 默认每页10条
+
+        # 计算分页范围
+        start = (page - 1) * page_size
+        end = start + page_size
+
+        categories = Category.objects.all()[start:end]
+
+        categories_data = [{
+            'id': category.category_id,
+            'name': category.category_name,
+            'status': category.status,
+            'imageURL': category.category_images,
+        } for category in categories]
+
+        result = Result.success_with_data(categories_data)
+        return JsonResponse(result.to_dict())
+    
+    except ValueError:
+        result = Result.error('Invalid page or pageSize parameter')
+        return JsonResponse(result.to_dict(), status=400)
+    except Exception as e:
+        result = Result.error(f'Failed to get products: {str(e)}')
+        return JsonResponse(result.to_dict(), status=500)

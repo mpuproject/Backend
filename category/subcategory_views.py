@@ -1,5 +1,5 @@
 from django.http import JsonResponse
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 from .models import SubCategory
 from common.result.result import Result
 import json
@@ -135,3 +135,183 @@ def get_subcategory_view(request):
 
     result = Result.success_with_data(subcategory_data)
     return JsonResponse(result.to_dict())
+
+@require_GET
+@token_required
+@admin_required
+def get_admin_subcategory_view(request):
+    try:
+        page = int(request.GET.get('page', 1))
+        page_size = int(request.GET.get('page', 10))
+
+    # 计算分页范围
+        start = (page - 1) * page_size
+        end = start + page_size
+    
+        subcategories = SubCategory.objects.all()[start:end]
+
+        subcategories_data = ({
+            'id': subcategory.sub_cate_id,
+            'name': subcategory.sub_cate_name,
+            'status': subcategory.status,
+            'images': subcategory.sub_cate_image,
+        } for subcategory in subcategories)
+
+        result = Result.success_with_data(subcategories_data)
+        return JsonResponse(result.to_dict())
+    
+    except ValueError:
+        result = Result.error('Invalid page or pageSize parameter')
+        return JsonResponse(result.to_dict(), status=400)
+    except Exception as e:
+        result = Result.error(f'Failed to get products: {str(e)}')
+        return JsonResponse(result.to_dict(), status=500)
+    
+
+@require_POST
+@token_required
+@admin_required
+def add_subcategory_view(request):
+    try:
+        # 解析请求体中的 JSON 数据
+        body = json.loads(request.body)
+        sub_cate_name = body.get('name')  # 获取二级分类名称
+        category_id = body.get('categoryId')  # 获取所属一级分类ID
+        image_url = body.get('images')  # 获取图片URL
+
+        # 验证必填字段
+        if not sub_cate_name or not category_id:
+            result = Result.error('Subcategory name and category ID are required')
+            return JsonResponse(result.to_dict(), status=400)
+
+        # 验证图片URL是否为列表类型
+        if image_url and not isinstance(image_url, list):
+            result = Result.error('imageURL must be an array')
+            return JsonResponse(result.to_dict(), status=400)
+
+        # 创建新的二级分类
+        new_subcategory = SubCategory.objects.create(
+            sub_cate_name=sub_cate_name,
+            category_id=category_id,
+            sub_cate_image=image_url if image_url else [],
+            status="0"  # 默认状态为禁用
+        )
+
+        # 构造返回的数据
+        subcategory_data = {
+            "id": new_subcategory.sub_cate_id,
+            "name": new_subcategory.sub_cate_name,
+            "categoryId": new_subcategory.category.category_id,
+            "imageURL": new_subcategory.sub_cate_image,
+            "status": new_subcategory.status
+        }
+
+        result = Result.success_with_data(subcategory_data)
+        return JsonResponse(result.to_dict())
+
+    except json.JSONDecodeError:
+        result = Result.error('Invalid JSON format in request body')
+        return JsonResponse(result.to_dict(), status=400)
+    except Exception as e:
+        result = Result.error(f'Failed to add subcategory: {str(e)}')
+        return JsonResponse(result.to_dict(), status=500)
+    
+@require_http_methods('PUT')
+@token_required
+@admin_required
+def update_subcategory_view(request):
+    try:
+        body = json.loads(request.body)
+        sub_cate_id = body.get('id')  # 获取二级分类ID
+        sub_cate_name = body.get('name')  # 获取二级分类名称
+        category_id = body.get('categoryId')  # 获取所属一级分类ID
+        image_url = body.get('images')  # 获取图片URL
+        status = body.get('status')  # 获取状态
+
+        # 验证必填字段
+        if not sub_cate_id:
+            result = Result.error('Subcategory ID is required')
+            return JsonResponse(result.to_dict(), status=400)
+
+        # 查找要更新的二级分类
+        try:
+            subcategory = SubCategory.objects.get(sub_cate_id=sub_cate_id)
+        except SubCategory.DoesNotExist:
+            result = Result.error('Subcategory not found')
+            return JsonResponse(result.to_dict(), status=404)
+
+        # 更新字段
+        if sub_cate_name:
+            subcategory.sub_cate_name = sub_cate_name
+        if category_id:
+            subcategory.category_id = category_id
+        if image_url is not None:  # 允许传递空数组来删除所有图片
+            if not isinstance(image_url, list):
+                result = Result.error('images must be an array')
+                return JsonResponse(result.to_dict(), status=400)
+            subcategory.sub_cate_image = image_url
+        if status is not None:
+            subcategory.status = status
+
+        # 保存更新
+        subcategory.save()
+
+        # 构造返回的数据
+        subcategory_data = {
+            "id": subcategory.sub_cate_id,
+            "name": subcategory.sub_cate_name,
+            "categoryId": subcategory.category.category_id,
+            "images": subcategory.sub_cate_image,
+            "status": subcategory.status
+        }
+
+        result = Result.success_with_data(subcategory_data)
+        return JsonResponse(result.to_dict())
+
+    except json.JSONDecodeError:
+        result = Result.error('Invalid JSON format in request body')
+        return JsonResponse(result.to_dict(), status=400)
+    except Exception as e:
+        result = Result.error(f'Failed to update subcategory: {str(e)}')
+        return JsonResponse(result.to_dict(), status=500)
+    
+
+@require_http_methods('DELETE')
+@token_required
+@admin_required
+def delete_subcategory_view(request):
+    try:
+        # 解析请求体中的 JSON 数据
+        body = json.loads(request.body)
+        sub_cate_id = body.get('id')  # 获取二级分类ID
+
+        # 验证分类 ID 是否为空
+        if not sub_cate_id:
+            result = Result.error('Subcategory ID is required')
+            return JsonResponse(result.to_dict(), status=400)
+
+        # 查找要删除的二级分类
+        try:
+            subcategory = SubCategory.objects.get(sub_cate_id=sub_cate_id)
+        except SubCategory.DoesNotExist:
+            result = Result.error('Subcategory not found')
+            return JsonResponse(result.to_dict(), status=404)
+
+        # 检查是否存在关联的商品
+        if Product.objects.filter(sub_category=subcategory).exists():
+            result = Result.error('Cannot delete subcategory with associated products')
+            return JsonResponse(result.to_dict(), status=400)
+
+        # 删除二级分类
+        subcategory.delete()
+
+        result = Result.success_with_data('Subcategory deleted successfully')
+        return JsonResponse(result.to_dict())
+
+    except json.JSONDecodeError:
+        result = Result.error('Invalid JSON format in request body')
+        return JsonResponse(result.to_dict(), status=400)
+    except Exception as e:
+        result = Result.error(f'Failed to delete subcategory: {str(e)}')
+        return JsonResponse(result.to_dict(), status=500)
+    
