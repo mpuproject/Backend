@@ -5,5 +5,6 @@ urlpatterns = [
     path('new/', views.new_view, name='homeNew'),
     path('hot/', views.hot_view, name='homeHot'),
     path('message/', views.get_message_count, name='messageCount'),
-    path('products/', views.get_home_product_view, name='homeProduct')
+    path('products/', views.get_home_product_view, name='homeProduct'),
+    path('recommend/', views.get_recommend_category_view, name='homeCategory')
 ]

@@ -5,7 +5,6 @@ from django.http import JsonResponse
 from common.result.result import Result
 from common.utils.decorators import token_required
 from order.models import Order, OrderItem
-from user.models import User
 from category.models import Category, SubCategory
 
 # 返回新上架商品
@@ -110,8 +109,8 @@ def get_home_product_view(request):
             category_data.append({
                 "id": random_subcategory.category.category_id,
                 "name": random_subcategory.category.category_name,
-                "saleInfo": random_subcategory.sub_category_name,
-                "picture": random_subcategory.image_url if random_subcategory.image_url else "https://picsum.photos/200/600",
+                "saleInfo": random_subcategory.sub_cate_name,
+                "picture": random_subcategory.sub_cate_image if random_subcategory.sub_cate_image else "https://picsum.photos/200/600",
                 "goods": [
                     {
                         "id": product.product_id,
@@ -130,3 +129,64 @@ def get_home_product_view(request):
     except Exception as e:
         result = Result.error(str(e))
         return JsonResponse(result.to_dict())
+
+@require_GET
+def get_recommend_category_view(request):
+    try:
+        # 获取前7个启用状态的主分类
+        categories = Category.objects.filter(status='1')[:7]
+        
+        category_list = []
+        for category in categories:
+            # 获取该主分类下的2个随机二级分类
+            sub_categories = SubCategory.objects.filter(
+                category=category,
+                status='1'
+            ).order_by('?')[:2]
+            
+            # 构造二级分类数据
+            sub_list = []
+            all_products = []  # 存储所有二级分类下的商品
+            
+            for sub in sub_categories:
+                # 获取该二级分类下的随机5个商品
+                products = Product.objects.filter(
+                    sub_category=sub,
+                    status='1',
+                    is_deleted=False
+                ).order_by('?')[:4]
+                
+                # 将商品添加到总商品列表中
+                for product in products:
+                    product_data = {
+                        'id': str(product.product_id),
+                        'name': product.product_name,
+                        'price': str(product.price),
+                        'image': product.images[0] if product.images else None,
+                    }
+                    all_products.append(product_data)
+                
+                # 构造二级分类基本信息
+                sub_data = {
+                    'id': str(sub.sub_cate_id),
+                    'name': sub.sub_cate_name,
+                }
+                sub_list.append(sub_data)
+            
+            # 构造主分类数据
+            category_data = {
+                'id': str(category.category_id),
+                'name': category.category_name,
+                'children': sub_list,
+                'products': all_products
+            }
+            category_list.append(category_data)
+        
+        # 返回结果
+        result = Result.success_with_data(category_list)
+        return JsonResponse(result.to_dict())
+        
+    except Exception as e:
+        result = Result.error(str(e))
+        return JsonResponse(result.to_dict())
+    
