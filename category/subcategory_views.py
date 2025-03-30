@@ -6,6 +6,9 @@ import json
 from product.models import Product
 from django.core.paginator import Paginator
 from common.utils.decorators import admin_required, token_required
+import logging
+
+logger = logging.getLogger(__name__)
 
 # 获取二级分类导航
 @require_GET
@@ -142,29 +145,44 @@ def get_subcategory_view(request):
 def get_admin_subcategory_view(request):
     try:
         page = int(request.GET.get('page', 1))
-        page_size = int(request.GET.get('page', 10))
+        page_size = int(request.GET.get('pageSize', 10))
+        
+        # 限制 page_size 的最大值
+        if page_size > 50:
+            page_size = 50
 
-    # 计算分页范围
-        start = (page - 1) * page_size
-        end = start + page_size
-    
-        subcategories = SubCategory.objects.all()[start:end]
+        # 使用 Paginator 处理分页
+        paginator = Paginator(SubCategory.objects.all(), page_size)
+        page_obj = paginator.get_page(page)
 
-        subcategories_data = ({
+        # 构造返回数据
+        subcategories_data = [{
             'id': subcategory.sub_cate_id,
             'name': subcategory.sub_cate_name,
             'status': subcategory.status,
-            'images': subcategory.sub_cate_image,
-        } for subcategory in subcategories)
+            'images': subcategory.sub_cate_image if subcategory.sub_cate_image else "",  # 直接返回完整的字符串
+            'categoryId': str(subcategory.category.category_id)  # 确保 categoryId 是字符串
+        } for subcategory in page_obj]
 
-        result = Result.success_with_data(subcategories_data)
+        # 确保 subcategories_data 是有效的列表
+        if not isinstance(subcategories_data, list):
+            raise ValueError("subcategories_data must be a list")
+
+        result_data = {
+            'data': subcategories_data,
+            'total': paginator.count
+        }
+        # 返回结果
+        result = Result.success_with_data(result_data)
         return JsonResponse(result.to_dict())
     
-    except ValueError:
+    except ValueError as e:
+        logger.error(f"ValueError in get_admin_subcategory_view: {str(e)}")
         result = Result.error('Invalid page or pageSize parameter')
         return JsonResponse(result.to_dict(), status=400)
     except Exception as e:
-        result = Result.error(f'Failed to get products: {str(e)}')
+        logger.error(f"Exception in get_admin_subcategory_view: {str(e)}")
+        result = Result.error(f'Failed to get subcategories: {str(e)}')
         return JsonResponse(result.to_dict(), status=500)
     
 
@@ -245,11 +263,11 @@ def update_subcategory_view(request):
             subcategory.sub_cate_name = sub_cate_name
         if category_id:
             subcategory.category_id = category_id
-        if image_url is not None:  # 允许传递空数组来删除所有图片
-            if not isinstance(image_url, list):
-                result = Result.error('images must be an array')
+        if image_url is not None:  # 允许传递空字符串来删除图片
+            if not isinstance(image_url, str):  # 检查是否为字符串
+                result = Result.error('imageURL must be a string')
                 return JsonResponse(result.to_dict(), status=400)
-            subcategory.sub_cate_image = image_url
+            subcategory.sub_cate_image = image_url  # 直接存储为字符串
         if status is not None:
             subcategory.status = status
 
@@ -261,7 +279,7 @@ def update_subcategory_view(request):
             "id": subcategory.sub_cate_id,
             "name": subcategory.sub_cate_name,
             "categoryId": subcategory.category.category_id,
-            "images": subcategory.sub_cate_image,
+            "images": subcategory.sub_cate_image,  # 直接返回字符串
             "status": subcategory.status
         }
 
