@@ -32,6 +32,7 @@ urlpatterns = [
     path('address/', include('address.urls')),
     path('order/', include('order.urls')),
     path('comment/', include('comment.urls')),
+    path('question/', include('question.urls')),
     path('get_csrf/', csrf_view.get_csrf_token)
 ]
 

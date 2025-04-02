@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'address',
     'order',
     'comment',
+    'question',
 ]
 
 MIDDLEWARE = [
