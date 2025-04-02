@@ -164,23 +164,39 @@ def update_order_item_view(request):
             
         data = json.loads(request.body)
         item_id = data.get('item_id')
-        item_status = data.get('item_status')
-        print(item_id, item_status)
-        if not item_id or not item_status:
+        old_status = data.get('old_status')
+        new_status = data.get('new_status')
+        if not item_id or not old_status or not new_status:
             return JsonResponse({
                 'code': 400,
                 'message': 'Missing required parameters: item_id or item_status'
             }, status=400)
+
+        # 状态转换验证
+        valid_transitions = {
+            '1': ['6'],  # 待发货可以申请退款
+            '9': ['6'],  # 待付款可以申请退款
+            '3': ['6'],  # 待收货可以申请退款
+            '4': ['5', '6'],  # 已发货可以确认收货或申请退款
+            '5': ['6', '8'],  # 已收货可以申请退款或评价
+        }
+
+        if old_status not in valid_transitions or new_status not in valid_transitions.get(old_status, []):
+            return JsonResponse({
+                'code': 400,
+                'message': 'Invalid status transformation'
+            }, status=400)
+
         # 精确查询订单项
-        item = get_object_or_404(OrderItem, item_id=item_id)
-        item.item_status = item_status
+        item = get_object_or_404(OrderItem, item_id=item_id, item_status=old_status)
+        item.item_status = new_status
         item.save()
 
         return JsonResponse({
             'code': 200,
             'data': {
                 'item_id': item.item_id,
-                'item_status': item_status,
+                'item_status': new_status,
                 'updated_time': item.updated_time.isoformat()
             }
         }, status=200)
