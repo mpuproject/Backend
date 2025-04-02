@@ -20,6 +20,9 @@ from django.urls import path, include
 from django.conf.urls.static import static
 from django.conf import settings
 from ecommerce import csrf_view
+from django.urls import path
+from .csrf_view import redirect_to_https
+
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -33,7 +36,8 @@ urlpatterns = [
     path('order/', include('order.urls')),
     path('comment/', include('comment.urls')),
     path('question/', include('question.urls')),
-    path('get_csrf/', csrf_view.get_csrf_token)
+    path('get_csrf/', csrf_view.get_csrf_token),
+    path('redirect-to-https/', redirect_to_https, name='redirect_to_https'),
 ]
 
 if settings.DEBUG:
