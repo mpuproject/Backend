@@ -55,7 +55,7 @@ INSTALLED_APPS = [
     'order',
     'comment',
     'question',
-    'django_extensions',
+    'django_extensions'
 ]
 
 MIDDLEWARE = [
@@ -117,7 +117,7 @@ CSRF_USE_SESSIONS = False
 CSRF_COOKIE_HTTPONLY = False
 
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
+    "https://localhost:5173",
 ]
 
 # 启用XSS保护
@@ -130,7 +130,7 @@ X_FRAME_OPTIONS = 'DENY'
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
+    "https://localhost:5173",
 ]
 
 CORS_ALLOW_METHODS = [
