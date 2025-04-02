@@ -26,5 +26,10 @@ pip install djangorestframework-simplejwt
 
 # 安装 Django CORS Headers
 pip install django-cors-headers
-```
 
+# 安装django_extensions
+pip install django-extensions Werkzeug pyOpenSSL
+
+# 使用以下命令开启后端
+python manage.py runserver_plus --cert-file certs/localhost.pem --key-file certs/localhost-key.pem
+```
