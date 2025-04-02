@@ -178,7 +178,7 @@ def update_order_item_view(request):
             '9': ['6'],  # 待付款可以申请退款
             '3': ['6'],  # 待收货可以申请退款
             '4': ['5', '6'],  # 已发货可以确认收货或申请退款
-            '5': ['6', '8'],  # 已收货可以申请退款或评价
+            '5': ['6'],  # 已收货可以申请退款
         }
 
         if old_status not in valid_transitions or new_status not in valid_transitions.get(old_status, []):
