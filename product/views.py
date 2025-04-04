@@ -13,6 +13,32 @@ from django.utils.html import escape
 from django.utils.html import strip_tags
 
 @require_GET
+@token_required
+def get_details_status_view(request):
+    try:
+        product_id = request.GET.get('id')
+        if not product_id:
+            result = Result.error('Missing product ID parameter')
+            return JsonResponse(result.to_dict(), status=400)
+
+        product = Product.objects.get(product_id=product_id)
+        
+        status_data = {
+            'id': str(product.product_id),
+            'status': product.status == '1' and not product.is_deleted,
+        }
+        
+        result = Result.success_with_data(status_data)
+        return JsonResponse(result.to_dict())
+
+    except Product.DoesNotExist:
+        result = Result.error('Product not found')
+        return JsonResponse(result.to_dict(), status=404)
+    except Exception as e:
+        result = Result.error(f'Server error: {str(e)}')
+        return JsonResponse(result.to_dict(), status=500)
+
+@require_GET
 def get_details_view(request, pk):  # 使用 pk 作为参数名
     try:
         # 使用 pk 查询商品
@@ -31,6 +57,7 @@ def get_details_view(request, pk):  # 使用 pk 作为参数名
     product_data = {
         'id': str(product.product_id),
         'name': product.product_name,
+        'status': product.status and not product.is_deleted,
         'price': str(product.price),
         'description': product.product_desc,
         'rating': product.product_rating,
