@@ -30,10 +30,10 @@ def get_category_nav_view(request):
     result = Result.success_with_data(category_list)
     return JsonResponse(result.to_dict())
 
-@require_POST
+@require_GET
 def get_category_view(request):
     try:
-        id = json.loads(request.body).get("id")
+        id = request.GET.get("id")
 
         # 获取分类信息
         category = Category.objects.get(Q(category_id=id) & Q(status='1'))
