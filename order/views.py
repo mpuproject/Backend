@@ -9,10 +9,11 @@ from .models import Order, OrderItem
 from django.shortcuts import get_object_or_404
 from product.models import Product
 from django.core.paginator import Paginator, EmptyPage
-from django.db.models import Q, Max
+from django.db.models import Q, Max, F
 from django.utils import timezone
 from comment.models import Comment
 from django.db.models import Max
+from django.db import transaction
 
 @require_POST
 @token_required
@@ -37,22 +38,21 @@ def create_order_view(request):
             order_status='0'    #默认状态为未支付
         )
 
-        # 创建订单下的商品
-        for index, item in enumerate(items):
-            # 查询商品并减少库存
-            product = get_object_or_404(Product, product_id=item['id'])
-            if product.stock_quantity < item['count']:
-                raise Exception(f"{product.product_name} is understock")
-            product.stock_quantity -= item['count']
-            product.save()
+        with transaction.atomic():
+            # 创建订单下的商品
+            for index, item in enumerate(items):
+                # 查询商品并减少库存
+                product = get_object_or_404(Product, product_id=item['id'])
+                if product.stock_quantity < item['count']:
+                    raise Exception(f"{product.product_name} is understock")
+                Product.objects.filter(product_id=item['id']).update(stock_quantity=F('stock_quantity') - item['count'])
 
-
-            OrderItem.objects.create(
-                item_status='0',     #默认状态为未支付
-                product=item,
-                order=order,
-                item_id=f"{order.order_id}-{index}"
-            )
+                OrderItem.objects.create(
+                    item_status='0',     #默认状态为未支付
+                    product=item,
+                    order=order,
+                    item_id=f"{order.order_id}-{index}"
+                )
         
         # 将订单对象转换为字典
         order_data = {
@@ -66,7 +66,6 @@ def create_order_view(request):
         return JsonResponse(result.to_dict(), status=201)
         
     except Exception as e:
-        print("错误信息:", e)
         result = Result.error(str(e))
         return JsonResponse(result.to_dict(), status=400)
 
@@ -302,6 +301,7 @@ def get_order_by_user_id_view(request):
                 'post_fee': order.post_fee if hasattr(order, 'post_fee') else 0,
                 'items': [{
                     'id': item.item_id,
+                    'productId': item.product['id'],
                     'item_status': item.item_status,
                     'name': item.product.get('name', '未知商品'),
                     'image': item.product.get('image', ''),
@@ -456,6 +456,8 @@ def update_admin_item_status_view(request):
             return JsonResponse(result.to_dict(), status=400)
         
         item.item_status = new_status
+        item.is_read = False
+        item.updated_time = timezone.now()
         item.save()
 
         result = Result.success()
@@ -519,3 +521,54 @@ def get_order_detail_view(request):
 
     except Exception as e:
         return JsonResponse({'code': 500, 'message': f'Server error: {str(e)}'}, status=500)
+    
+@require_GET
+@token_required
+def get_order_notification_view(request):
+    try:
+        user_id = request.GET.get('userId')
+        if not user_id:
+            result = Result.error('Missing userId parameter')
+            return JsonResponse(result.to_dict(), status=400)
+
+        # 获取与用户相关的订单
+        orders = Order.objects.filter(user_id=user_id)
+
+        # 获取这些订单中未读的OrderItem
+        unread_items = OrderItem.objects.filter(order__in=orders, is_read=False)
+
+        # 返回未读订单项的数量
+        countdown = unread_items.count()
+
+        result = Result.success_with_data({'count': countdown})
+        return JsonResponse(result.to_dict())
+
+    except Exception as e:
+        result = Result.error(f'Server error: {str(e)}')
+        return JsonResponse(result.to_dict(), status=500)
+    
+@require_http_methods('PATCH')
+@token_required
+def update_order_notification_view(request):
+    try:
+        data = json.loads(request.body)
+        user_id = data.get('userId')
+        if not user_id:
+            result = Result.error('Missing userId parameter')
+            return JsonResponse(result.to_dict(), status=400)
+
+        # 获取与用户相关的订单
+        orders = Order.objects.filter(user_id=user_id)
+
+        # 获取这些订单中未读的OrderItem
+        unread_items = OrderItem.objects.filter(order__in=orders, is_read=False)
+
+        # 将未读订单项的is_read字段更新为True
+        unread_items.update(is_read=True)
+
+        result = Result.success()
+        return JsonResponse(result.to_dict())
+
+    except Exception as e:
+        result = Result.error(f'Server error: {str(e)}')
+        return JsonResponse(result.to_dict(), status=500)

@@ -12,38 +12,37 @@ from common.utils.decorators import token_required
 @require_POST
 def upload_image(request):
     try:
-        # 检查文件是否存在
+        # verify if the file exist
         if 'file' not in request.FILES:
             result = Result.error('No file provided')
             return JsonResponse(result.to_dict(), status=400)
         
         file = request.FILES['file']
         
-        # 验证文件类型
+        # verify MIME type
         if not file.content_type.startswith('image/'):
             result = Result.error('Only image files are allowed')
             return JsonResponse(result.to_dict(), status=400)
         
-        # 验证文件扩展名
+        # verify file extension
         allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif']
         ext = os.path.splitext(file.name)[1].lower()
         if ext not in allowed_extensions:
             result = Result.error('Invalid file extension')
             return JsonResponse(result.to_dict(), status=400)
         
-        # 验证文件大小
+        # check the file size
         if file.size > 20 * 1024 * 1024:  # 5MB
             result = Result.error('File size must be less than 5MB')
             return JsonResponse(result.to_dict(), status=400)
         
-        # 检查文件内容
+        # check file content
         try:
-            Image.open(file).verify()  # 验证图片文件
+            Image.open(file).verify()
         except Exception:
             result = Result.error('Invalid image file')
             return JsonResponse(result.to_dict(), status=400)
         
-        # 保存文件前进行二次渲染
         try:
             img = Image.open(file)
             # 移除EXIF数据

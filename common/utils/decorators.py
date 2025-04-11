@@ -8,14 +8,14 @@ from datetime import datetime
 def token_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
-        # 初始化 JWTAuthentication
         authenticator = JWTAuthentication()
         try:
-            # 验证 JWT Token
             auth_result = authenticator.authenticate(request)
+
+            # check for the auth_result details
             if auth_result is not None:
-                user, token = auth_result  # 解包用户和 token
-                # 检查 token 是否在有效期内
+                user, token = auth_result
+            
                 now = datetime.now()
                 iat = token.payload.get('iat')
                 exp = token.payload.get('exp')

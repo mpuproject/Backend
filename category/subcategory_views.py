@@ -32,17 +32,16 @@ def get_subcategory_filter_view(request, id):
         result = Result.error("Sub-category not found")
         return JsonResponse(result.to_dict(), status=404)
     
-@require_POST
+@require_GET
 def get_subcategory_products_view(request):
     try:
-        # 解析请求体中的 JSON 数据
-        body = json.loads(request.body)
-        sub_category_id = body.get('subCategoryId')  # 二级分类 ID
-        page = body.get('page', 1)  # 当前页码，默认为 1
-        page_size = body.get('pageSize', 20)  # 每页数量，默认为 20
-        sort_field = body.get('sortField', 'default')  # 排序字段，默认为 created_time
-        min_price = body.get('sortMin')  # 最小价格
-        max_price = body.get('sortMax')  # 最大价格
+        # 从 GET 请求中获取参数
+        sub_category_id = request.GET.get('subCategoryId')  # 二级分类 ID
+        page = int(request.GET.get('page', 1))  # 当前页码，默认为 1
+        page_size = int(request.GET.get('pageSize', 20))  # 每页数量，默认为 20
+        sort_field = request.GET.get('sortField', 'default')  # 排序字段，默认为 created_time
+        min_price = request.GET.get('sortMin')  # 最小价格
+        max_price = request.GET.get('sortMax')  # 最大价格
 
         # 验证二级分类是否存在
         try:
@@ -59,9 +58,9 @@ def get_subcategory_products_view(request):
 
         # 添加价格区间筛选
         if min_price is not None:
-            products = products.filter(price__gte=min_price)
+            products = products.filter(price__gte=float(min_price))
         if max_price is not None:
-            products = products.filter(price__lte=max_price)
+            products = products.filter(price__lte=float(max_price))
 
         # 获取二级分类下的所有可用产品，并按指定字段排序
         if sort_field == 'created_time':
@@ -117,8 +116,8 @@ def get_subcategory_products_view(request):
         result = Result.success_with_data(response_data)
         return JsonResponse(result.to_dict())
 
-    except json.JSONDecodeError:
-        result = Result.error("Invalid JSON format in request body")
+    except ValueError as e:
+        result = Result.error(f"Invalid parameter: {str(e)}")
         return JsonResponse(result.to_dict(), status=400)
 
 @require_GET    

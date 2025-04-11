@@ -12,8 +12,12 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = True
+SESSION_COOKIE_SAMESITE = 'None'
 SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+
+SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
 
 from pathlib import Path
 
@@ -111,13 +115,14 @@ import os
 MEDIA_URL = '/media/'   # http://localhost:8080/media/
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-CSRF_COOKIE_SAMESITE = 'Lax'  # 允许跨站请求
-CSRF_COOKIE_SECURE = False     # 因为使用的是HTTP
+CSRF_COOKIE_SAMESITE = 'None'  # 不允许跨站请求
+CSRF_COOKIE_SECURE = True
 CSRF_USE_SESSIONS = False
 CSRF_COOKIE_HTTPONLY = False
 
 CSRF_TRUSTED_ORIGINS = [
     "https://localhost:5173",
+    "https://localhost"
 ]
 
 # 启用XSS保护
@@ -131,6 +136,7 @@ CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
     "https://localhost:5173",
+    "https://localhost"
 ]
 
 CORS_ALLOW_METHODS = [

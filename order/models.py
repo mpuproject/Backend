@@ -57,6 +57,7 @@ class OrderItem(models.Model):
     item_id = models.CharField(primary_key=True, max_length=255, editable=False)
     item_status = models.CharField(max_length=2, choices=STATUS_CHOICES, default='0', verbose_name="订单商品状态")
     product = models.JSONField(default=dict, verbose_name="商品快照")
+    is_read = models.BooleanField(default=False, verbose_name='消息是否已读')
 
     order = models.ForeignKey(Order, on_delete=models.CASCADE, verbose_name='订单')
 
